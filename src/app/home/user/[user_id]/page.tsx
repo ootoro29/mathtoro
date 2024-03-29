@@ -50,9 +50,9 @@ export default function Page({params}:{params:{user_id:string}}){
                         <img src={pageUser.photoURL} alt="" width={100} height={100} style={{borderRadius:"50%"}} />
                         {
                             (user.id === pageUser.id)?(
-                                <form>
+                                <form onSubmit={changeUserProf}>
                                     <input type="text" value={pageUserName} onChange={(e) => {setPageUserName(e.target.value)}} />
-                                    <Button onClick={changeUserProf}>更新</Button>
+                                    <Button type="submit">更新</Button>
                                     
                                 </form>
                             ):(

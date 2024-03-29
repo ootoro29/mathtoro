@@ -22,11 +22,11 @@ export default function Page(){
             }).then(async(group) => {
                 const dbGroupUserRef = ref(db,`groupUsers/${group.key}/${user.id}`);
                 await set(dbGroupUserRef,{
-                    name: user.name
+                    exist: true
                 })
                 const dbUserGroupRef = ref(db,`userGroups/${user.id}/${group.key}`);
                 await set(dbUserGroupRef,{
-                    name: groupName  
+                    exist: true  
                 })
             })
             setGroupName('')
