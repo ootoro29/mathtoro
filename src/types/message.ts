@@ -6,4 +6,5 @@ export type Message = {
     sender:User;
     room:Room;
     body:string;
+    type:"chat" | "formula";
 };

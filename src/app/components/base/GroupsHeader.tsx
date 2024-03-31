@@ -1,23 +1,22 @@
 'use client'
 
-import { ReactNode } from "react";
+import { Dispatch, ReactNode, SetStateAction } from "react";
 import MenuIcon from '@mui/icons-material/Menu';
 import styled from "@emotion/styled";
-import { Box } from "@chakra-ui/react";
-const NaviMenu = styled.div`
+import { Box, Button } from "@chakra-ui/react";
+const Header = styled.div`
     @media (max-width:834px){
-        display:block;
+        margin-left:55px;
     }
-    display:none;
+    margin-left:0px;
 `
 
 export const GroupsHeader = ({children}: {children:ReactNode}) => {
     return(
         <Box style={{height:"60px",display:"flex"}} bg={"lightgray"} >
-            <NaviMenu>
-                <MenuIcon style={{margin:2, fontSize:"24px"}} />
-            </NaviMenu>
-            {children}
+            <Header>
+                {children}
+            </Header>
         </Box>
     );
 }

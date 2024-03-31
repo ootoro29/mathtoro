@@ -24,6 +24,7 @@ export default function Page({params}:{params:{group_id:string}}){
     const[test,setTest] = useState<string[]>([]);
     const[rooms, setRooms] = useState<Room[]>([]);
     const[roomName,setRoomName] = useState("");
+    const[inviteID,setInviteID] = useState("");
 
     const handleCreateRoom = async(e:FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -108,6 +109,17 @@ export default function Page({params}:{params:{group_id:string}}){
         })
     },[pageGroup])
 
+    useEffect(() => {
+        if(!pageGroup)return;
+        const rdb = getDatabase()
+        const groupRoomsRef = ref(rdb,`invites/${pageGroup.key}`)
+        return onChildAdded(groupRoomsRef,(snapshot) => {
+            const key = snapshot.key || "";
+            setInviteID(key);
+        })
+    },[pageGroup])
+
+
     if(pageGroup){
         return(
             <>
@@ -146,6 +158,7 @@ export default function Page({params}:{params:{group_id:string}}){
                             </div>
                         ))
                     }
+                    <p>招待URL: {window.location.origin}/invite/{pageGroup.key}/{inviteID}</p>
                 </ChatBody>
             </>
         );

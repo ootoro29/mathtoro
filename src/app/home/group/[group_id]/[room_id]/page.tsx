@@ -15,6 +15,15 @@ import { doc, getDoc} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
+import { MathfieldElement } from "mathlive";
+
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+        'math-field': React.DetailedHTMLProps<React.HTMLAttributes<MathfieldElement>, MathfieldElement>;
+        }
+    }
+}
 export default function Page({params}:{params:{group_id:string,room_id:string}}){
     const user = useAuth();
     const router = useRouter();
@@ -81,7 +90,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             onValue(messageRef, async(snapshot) => {
                 const value = snapshot.val();
                 const sender = await handleGetUser(value.sender_id);
-                const message:Message = {key:key,body:value.body,sender:sender,room:room}
+                const message:Message = {key:key,body:value.body,sender:sender,room:room,type:value.type}
                 setMessages((prev) => [...prev,message]);
             })
         })
@@ -99,15 +108,47 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                 <ChatBody>
                     <div>
                         {
-                           messages.map((message,i) => (
-                                <div key = {i} style={{height:"50px",margin:4,display:"flex",marginTop:20,marginBottom:20}}>
-                                    <img src={message.sender.photoURL} alt="" width={48} height={48} style={{borderRadius:"50%"}} />
-                                    <div style={{flexGrow:1,padding:2,marginLeft:8}}>
-                                        <p style={{fontWeight:"bold"}}>{message.sender.name}</p>
-                                        <p style={{textIndent:5}}>{message.body}</p>
-                                    </div>
-                                </div>
-                           )) 
+                           messages.map((message,i,lastUser) => {
+                                if(i == 0 || lastUser.at(i-1)?.sender.id !== message.sender.id){
+                                    return(
+                                        <div key = {i} style={{minHeight:"50px",margin:4,display:"flex",marginTop:20}}>
+                                            <img src={message.sender.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
+                                            <div style={{flexGrow:1,padding:2,marginLeft:8}}>
+                                                <p style={{fontWeight:"bold"}}>{message.sender.name}</p>
+                                                {
+                                                    (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
+                                                }
+                                                {
+                                                    (message.type==="formula")&&
+                                                        <math-field read-only>
+                                                            {message.body}
+                                                        </math-field>
+                                                }
+                                                
+                                            </div>
+                                        </div>
+                                    )
+                                }else{
+                                    return(
+                                        <div key = {i} style={{marginLeft:4,display:"flex"}}>
+                                            <div style={{width:"48px"}}>
+                                            </div>
+                                            <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
+                                                {
+                                                    (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
+                                                }
+                                                {
+                                                    (message.type==="formula")&&
+                                                        <math-field read-only>
+                                                            {message.body}
+                                                        </math-field>
+                                                }
+                                                
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                            }) 
                         }
                     </div>
                 </ChatBody>

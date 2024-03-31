@@ -53,10 +53,13 @@ export default function Page({params}:{params:{user_id:string}}){
                                 <form onSubmit={changeUserProf}>
                                     <input type="text" value={pageUserName} onChange={(e) => {setPageUserName(e.target.value)}} />
                                     <Button type="submit">更新</Button>
-                                    
+                                    <p>{"ユーザーID: "+pageUser.id}</p>
                                 </form>
                             ):(
-                                <p>{pageUser.name}</p>
+                                <>
+                                    <p>{pageUser.name}</p>
+                                    <p>{"ユーザーID: "+pageUser.id}</p>
+                                </>
                             )
                         }
                     </Box>

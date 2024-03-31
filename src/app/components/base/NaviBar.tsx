@@ -1,4 +1,5 @@
 'use client'
+/** @jsxImportSource @emotion/react */ 
 import { useAuth } from "@/context/auth";
 import styled from "@emotion/styled";
 import Image from "next/image";
@@ -7,25 +8,68 @@ import Link from "next/link";
 import { User } from "@/types/user";
 import AddIcon from '@mui/icons-material/Add';
 import { Group } from "@/types/group";
+import { css } from "@emotion/react";
+import { useState } from "react";
+import MenuIcon from '@mui/icons-material/Menu';
+import ClearIcon from '@mui/icons-material/Clear';
 
-const Navi = styled.div`
+//display:none;
+const Navi =css`
     @media (max-width:834px){
-        display:none;
+        position:absolute;
+        left:-250px;
+        transform: translateX(0px);
+        transition: all 300ms 0s ease-in-out;
+        width:250px;
     }
     display:block;
     width:300px;
     height:100%;
     display:flex;
     flex-direction:column;
-    border: 0.5 solid gray
-    
+    border: 0.5 solid gray;
+    z-index:10;
 `;
+
+const Navimove = css`
+    @media (max-width:834px){
+        transform: translateX(250px);
+    }
+`
+const NaviMenu = styled.div`
+    @media (max-width:834px){
+        display:block;
+    }
+    display:none;
+`
+const MenuButton = styled.div`
+    @media (max-width:834px){
+        display:block;
+    }
+    display:none;
+    position:absolute;
+    left:250px;
+    color:white;
+    background:black;
+    width:60px;
+    height:60px;
+`
+
 
 
 export const NaviBar = ({currentUserPhotoURL, userName,groups}:{currentUserPhotoURL:string,userName:string,groups:Group[]}) => {
     const user = useAuth() as User;
+    const [open,setOpen] = useState(false);
     return(
-        <Navi style={{width:300}}>
+        <div css={[Navi,open&&Navimove]}>
+            <MenuButton onClick={() => setOpen(!open)} >
+                {
+                    (!open)&&<MenuIcon style={{fontWeight:"bold",fontSize:50,margin:5}} />
+                }
+                {
+                    (open)&&<ClearIcon style={{fontWeight:"bold",fontSize:50,margin:5}} />
+                }
+            </MenuButton>
             <Box bg={"gray.300"} >
                 <Link href={"/home"}>
                     <Box style = {{height:"60px",width:"100%",display:"flex",justifyContent:"center",alignItems:"center"}} >
@@ -48,8 +92,8 @@ export const NaviBar = ({currentUserPhotoURL, userName,groups}:{currentUserPhoto
                 <Link href={`/home/group/newgroup`}>
                     <Box style={{height:"50px",width:"100%",display:"flex",justifyContent:"center",alignItems:"center"}}>
                         <Button style={{width:"80%"}}
-                         bg="lightgreen" 
-                         _hover = {{
+                        bg="lightgreen" 
+                        _hover = {{
                             background: "green.100",
                         }}
                         >
@@ -64,6 +108,6 @@ export const NaviBar = ({currentUserPhotoURL, userName,groups}:{currentUserPhoto
                     <p style={{fontSize:24, fontWeight:"bold", margin:3}}>{userName}</p>
                 </Box>
             </Link>
-        </Navi>
+        </div>
     );
 }

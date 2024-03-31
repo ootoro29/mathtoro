@@ -14,8 +14,8 @@ export default function RootLayout({
 }>) {
   const router = useRouter();
   const user = useAuth();
-  const [open, setOpen] = useState(false);
   const [groups,setGroups] = useState<Array<Group>>([]);
+
   useEffect(() => {
     try {
         if(!user)return;
@@ -31,14 +31,14 @@ export default function RootLayout({
         })
     } catch (e) {
         if (e instanceof FirebaseError) {
-            //console.error(e)
+            console.error(e)
         }
         return
     }
   },[user]);
   if(user){
     return (
-      <div style={{display:"flex",flexDirection:"column",height:"100vh",width:"100%"}}>
+      <div style={{display:"flex",flexDirection:"column",height:"100dvh",width:"100%"}}>
           <div style={{background:"black",color:"white",width:"100%",height:"25px",fontSize:18}}>Mathtoro</div>
           <Box style={{display:"flex",flexGrow:1,minWidth:0}}>
               <div>

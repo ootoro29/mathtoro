@@ -28,6 +28,10 @@ export default function Page(){
                 await set(dbUserGroupRef,{
                     exist: true  
                 })
+                const dbInviteRef = ref(db,`invites/${group.key}`);
+                await push(dbInviteRef,{
+                    name:groupName
+                })
             })
             setGroupName('')
         }catch(e){
