@@ -21,7 +21,6 @@ export default function Page({params}:{params:{group_id:string}}){
     const router = useRouter();
     const[pageGroup,setPageGroup] = useState<Group>();
     const[members, setMembers] = useState<User[]>([]);
-    const[test,setTest] = useState<string[]>([]);
     const[rooms, setRooms] = useState<Room[]>([]);
     const[roomName,setRoomName] = useState("");
     const[inviteID,setInviteID] = useState("");
@@ -150,6 +149,7 @@ export default function Page({params}:{params:{group_id:string}}){
                         <Button type="submit"> 作成</Button>
                     </chakra.form>
                     <p>Members</p>
+                    
                     {
                         members.map((member:User,i) => (
                             <div key = {i}>

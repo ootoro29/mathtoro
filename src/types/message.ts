@@ -3,8 +3,14 @@ import { User } from "./user";
 
 export type Message = {
     key:string;
-    sender:User;
+    sender_id:string;
     room:Room;
     body:string;
     type:"chat" | "formula";
+};
+
+
+export type MessageList = {
+    message:Message;
+    sendUserKey:string;
 };

@@ -5,13 +5,13 @@ import { GroupsHeader } from "@/app/components/base/GroupsHeader";
 import { useAuth } from "@/context/auth";
 import { db } from "@/lib/firebase/config";
 import { Group } from "@/types/group";
-import { Message } from "@/types/message";
+import { Message, MessageList } from "@/types/message";
 import { Room } from "@/types/room";
 import { User } from "@/types/user";
 import { Button } from "@chakra-ui/react";
 import { FirebaseError } from "firebase/app";
-import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast } from "firebase/database";
-import { doc, getDoc} from "firebase/firestore";
+import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild } from "firebase/database";
+import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
@@ -30,6 +30,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [pageGroup,setPageGroup] = useState<Group>();
     const [room,setRoom] = useState<Room>();
     const [messages,setMessages] = useState<Message[]>([]);
+    const [members,setMembers] = useState<User[]>([]);
     const [message,setMessage] = useState<string>("");
     const handleGetUser = async(user_id:string) =>{
         const ref = doc(db,`users/${user_id}`);
@@ -82,23 +83,35 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         if(!pageGroup)return;
         if(!room)return;
         const rdb = getDatabase()
-        const roomMessagesRef = query(ref(rdb,`roomMessages/${params.room_id}`), limitToLast(100));
+        const roomMessagesRef = query(ref(rdb,`roomMessages/${params.room_id}`), limitToLast(100),orderByChild(`/sendAt`));
         onChildAdded(roomMessagesRef,(snapshot) => {
             const key = snapshot.key || "";
             const value = snapshot.val();
+            console.log(key,value.sendAt);
             const messageRef = ref(rdb,`messages/${key}`);
-            onValue(messageRef, async(snapshot) => {
+            onValue(messageRef, (snapshot) => {
                 const value = snapshot.val();
-                const sender = await handleGetUser(value.sender_id);
-                const message:Message = {key:key,body:value.body,sender:sender,room:room,type:value.type}
+                //const sender = await handleGetUser(value.sender_id);
+                const message:Message = {key:key,body:value.body,sender_id:value.sender_id,room:room,type:value.type}
                 setMessages((prev) => [...prev,message]);
             })
         })
-        if(messages.length == 0)return;
     },[room])
     useEffect(() => {
         return scrollBottom();
     },[messages.length]);
+
+    useEffect(() => {
+        if(!pageGroup)return;
+        const rdb = getDatabase()
+        const groupMembersRef = ref(rdb,`groupUsers/${pageGroup.key}`)
+        return onChildAdded(groupMembersRef,async(snapshot) => {
+            const key = snapshot.key || "";
+            const member = await handleGetUser(key);
+            setMembers((prev) => [...prev,member]);
+        })
+    },[pageGroup])
+
     if(room&&pageGroup){
         return(
             <>
@@ -108,13 +121,15 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                 <ChatBody>
                     <div>
                         {
+                            
                            messages.map((message,i,lastUser) => {
-                                if(i == 0 || lastUser.at(i-1)?.sender.id !== message.sender.id){
+                                const sender = members.find((u) => (u.id === message.sender_id));
+                                if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id){
                                     return(
                                         <div key = {i} style={{minHeight:"50px",margin:4,display:"flex",marginTop:20}}>
-                                            <img src={message.sender.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
+                                            <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
                                             <div style={{flexGrow:1,padding:2,marginLeft:8}}>
-                                                <p style={{fontWeight:"bold"}}>{message.sender.name}</p>
+                                                <p style={{fontWeight:"bold"}}>{sender?.name}</p>
                                                 {
                                                     (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
                                                 }
@@ -149,6 +164,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                     )
                                 }
                             }) 
+                            
                         }
                     </div>
                 </ChatBody>
