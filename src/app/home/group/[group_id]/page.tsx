@@ -1,7 +1,7 @@
 "use client"
 
 import { FirebaseError } from "firebase/app";
-import { getDatabase, onChildAdded, ref,onValue, push, set } from "firebase/database";
+import { getDatabase, onChildAdded, ref,onValue, push, set, child } from "firebase/database";
 import { FormEvent, useEffect, useState } from "react";
 import { Group } from "@/types/group";
 import { GroupsHeader } from "@/app/components/base/GroupsHeader";
@@ -21,8 +21,10 @@ export default function Page({params}:{params:{group_id:string}}){
     const router = useRouter();
     const[pageGroup,setPageGroup] = useState<Group>();
     const[members, setMembers] = useState<User[]>([]);
+    const[test,setTest] = useState<string[]>([]);
     const[rooms, setRooms] = useState<Room[]>([]);
     const[roomName,setRoomName] = useState("");
+    const[inviteID,setInviteID] = useState("");
 
     const handleCreateRoom = async(e:FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -34,16 +36,16 @@ export default function Page({params}:{params:{group_id:string}}){
             const dbRef = ref(db, 'rooms')
             await push(dbRef, {
                 title: roomName,
-                writer:user.name,
+                writer_id:user.id,
                 group_id: pageGroup.key
             }).then(async(room) => {
                 const dbGroupRoomRef = ref(db,`groupRooms/${params.group_id}/${room.key}`);
                 await set(dbGroupRoomRef,{
-                    title: roomName
+                    exist: true
                 })
                 const dbUserRoomRef = ref(db,`userRooms/${user.id}/${room.key}`);
                 await set(dbUserRoomRef,{
-                    title: roomName
+                    exist: true
                 })
             })
             setRoomName('')
@@ -65,52 +67,61 @@ export default function Page({params}:{params:{group_id:string}}){
 
     useEffect(() => {
         try {
-            let pass = false;
-            if(!user || pass)return;
             const rdb = getDatabase()
-            const dbGroupUser = ref(rdb,`groupUsers/${params.group_id}/${user.id}`)
-            return onValue(dbGroupUser, (snapshot) => {
-                if(!snapshot.exists()){
-                    pass = true;
-                    router.back();
-                    return;
-                }else{
-                    const dbRef = ref(rdb, `groups/${params.group_id}`)
-                    setMembers([]);
-                    setRooms([]);
-                    onValue(dbRef, (snapshot) => {
-                        const value = snapshot.val()
-                        setPageGroup({key:params.group_id,name:value.name});
-                        const dbMemberRef = ref(rdb, `groupUsers/${snapshot.key}`)
-                        onChildAdded(dbMemberRef,(snapshot) => {
-                            const key = snapshot.key || "";
-                            const value = snapshot.val();
-                            
-                            setMembers((prev) => {return[...prev,{id:key,name:value.name,photoURL:value.photoURL}]});
-                        })
-
-                        const dbGroupRooms = ref(rdb,`groupRooms/${snapshot.key}`)
-                        onChildAdded(dbGroupRooms,(snapshot) => {
-                            const key = snapshot.key || "";
-                            const dbRooms = ref(rdb,`rooms/${key}`)
-                            onValue(dbRooms,async (snapshot) => {
-                                const value = snapshot.val()
-                                setRooms((prev) => [...prev,{id:key,title:value.title,writer:value.writer}])
-                            })
-                        })
-                    })
-                }
-
+            const rdbRef = ref(rdb,`groups/${params.group_id}`)
+            return onValue(rdbRef,async(snapshot) => {
+                const key = snapshot.key || "";
+                const value = snapshot.val();
+                setPageGroup({key:key,name:value.name});
             })
         } catch (e) {
             if (e instanceof FirebaseError) {
                 console.error(e)
             }
+            router.back();
             return;
         }
-    },[user]);//
+    },[]);
+    useEffect(() => {
+        if(!pageGroup)return;
+        const rdb = getDatabase()
+        const groupMembersRef = ref(rdb,`groupUsers/${pageGroup.key}`)
+        return onChildAdded(groupMembersRef,async(snapshot) => {
+            const key = snapshot.key || "";
+            const member = await handleGetUser(key);
+            setMembers((prev) => [...prev,member]);
+        })
+    },[pageGroup])
+
+    useEffect(() => {
+        if(!pageGroup)return;
+        const rdb = getDatabase()
+        const groupRoomsRef = ref(rdb,`groupRooms/${pageGroup.key}`)
+        return onChildAdded(groupRoomsRef,(snapshot) => {
+            const key = snapshot.key || "";
+            const groupRoomsRef = ref(rdb,`rooms/${key}`)
+            onValue(groupRoomsRef,async(snaproom) => {
+                const value = snaproom.val();
+                const writer = await handleGetUser(value.writer_id);
+                const room:Room = {id:key,title:value.title,writer:writer}
+                setRooms((prev) => [...prev,room]);
+            })
+        })
+    },[pageGroup])
+
+    useEffect(() => {
+        if(!pageGroup)return;
+        const rdb = getDatabase()
+        const groupRoomsRef = ref(rdb,`invites/${pageGroup.key}`)
+        return onChildAdded(groupRoomsRef,(snapshot) => {
+            const key = snapshot.key || "";
+            setInviteID(key);
+        })
+    },[pageGroup])
+
+
     if(pageGroup){
-        return(//scrollbarWidth:"none",msOverflowStyle:"none"
+        return(
             <>
                 <GroupsHeader>
                     <p style={{fontWeight:"bold",fontSize:20,margin:16}}>{pageGroup.name}</p>
@@ -125,7 +136,7 @@ export default function Page({params}:{params:{group_id:string}}){
                                         <Link href={`/home/group/${params.group_id}/${room.id}`} key = {i}>
                                             <div style={{border:"gray solid 2px",width:"100px",float:"left",height:"140px", padding:2,margin:4,flexShrink:0}}  >
                                                 <p style={{fontSize:14,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
-                                                <p style={{fontSize:10,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.writer}</p>
+                                                <p style={{fontSize:10,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.writer.name}</p>
                                             </div>
                                         </Link>
                                     ))
@@ -141,9 +152,13 @@ export default function Page({params}:{params:{group_id:string}}){
                     <p>Members</p>
                     {
                         members.map((member:User,i) => (
-                            <p key = {i}>{member.name}</p>
+                            <div key = {i}>
+                                <p>{member.name}</p>
+                                <img src={member.photoURL} alt="" width={48} height={48} style={{borderRadius:"50%"}} />
+                            </div>
                         ))
                     }
+                    <p>招待URL: {window.location.origin}/invite/{pageGroup.key}/{inviteID}</p>
                 </ChatBody>
             </>
         );

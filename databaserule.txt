@@ -1,0 +1,6 @@
+".read": "auth !== null",
+".write": "auth !== null"
+
+
+mathliveについて
+v0.98.6だと括弧機能が使いにくいためv0.98.5を使用。

@@ -5,17 +5,32 @@ import { GroupsHeader } from "@/app/components/base/GroupsHeader";
 import { useAuth } from "@/context/auth";
 import { db } from "@/lib/firebase/config";
 import { Group } from "@/types/group";
+import { Message } from "@/types/message";
 import { Room } from "@/types/room";
 import { User } from "@/types/user";
-import { getDatabase, onChildAdded, onValue, ref } from "firebase/database";
-import { doc, getDoc } from "firebase/firestore";
+import { Button } from "@chakra-ui/react";
+import { FirebaseError } from "firebase/app";
+import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast } from "firebase/database";
+import { doc, getDoc} from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useEffect, useState } from "react";
+import { MathfieldElement } from "mathlive";
+
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+        'math-field': React.DetailedHTMLProps<React.HTMLAttributes<MathfieldElement>, MathfieldElement>;
+        }
+    }
+}
 export default function Page({params}:{params:{group_id:string,room_id:string}}){
     const user = useAuth();
     const router = useRouter();
     const [pageGroup,setPageGroup] = useState<Group>();
     const [room,setRoom] = useState<Room>();
+    const [messages,setMessages] = useState<Message[]>([]);
+    const [message,setMessage] = useState<string>("");
     const handleGetUser = async(user_id:string) =>{
         const ref = doc(db,`users/${user_id}`);
         const snap = await getDoc(ref);
@@ -25,53 +40,119 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         }
         return {id:"",name:"", photoURL: ""};
     }
+    function scrollBottom(){
+        console.log("AAAAAAA");
+        let chatArea = document.getElementById('chat-area');
+        if(!chatArea)return;
+        let chatAreaHeight = chatArea.scrollHeight;
+        chatArea.scrollTop = chatAreaHeight;
+        let bottom = chatArea.scrollHeight - chatArea.clientHeight;
+        chatArea.scroll(0, bottom);
+    }
     useEffect(() => {
-        try{
-            let pass = false;
-            if(!user||pass)return;
+        try {
             const rdb = getDatabase()
-            const dbGroupUser = ref(rdb,`groupUsers/${params.group_id}/${user.id}`)
-            return onValue(dbGroupUser, (snapshot) => {
-                if(!snapshot.exists()){
-                    router.back();
-                    pass = true;
-                    return;
-                }else{
-                    const dbGroupRoomsRef = ref(rdb, `groupRooms/${params.group_id}/${params.room_id}`)
-                    onValue(dbGroupRoomsRef, (snapshot) => {
-                        if(!snapshot.exists()){
-                            router.back();
-                            pass = true;
-                            return;
-                        }else{
-                            const dbGroupRef = ref(rdb,`groups/${params.group_id}`)
-                            onValue(dbGroupRef,async(snapshot) => {
-                                const key = snapshot.key || "";
-                                const value = snapshot.val();
-                                setPageGroup({key:key,name:value.name})
-                            })
-                            const dbRoomRef = ref(rdb,`rooms/${params.room_id}`)
-                            onValue(dbRoomRef,async(snapshot) => {
-                                const value = snapshot.val();
-                                setRoom({id:params.room_id,title:value.title,writer:value.writer});
-                            })
-                        }
-                    })
-                }
+            const rdbRef = ref(rdb,`groups/${params.group_id}`)
+            return onValue(rdbRef,async(snapshot) => {
+                const key = snapshot.key || "";
+                const value = snapshot.val();
+                setPageGroup({key:key,name:value.name});
             })
-        }catch(e){
-            console.log(e);
+        } catch (e) {
+            if (e instanceof FirebaseError) {
+                console.error(e)
+            }
+            router.back();
             return;
         }
-    },[user]);
+    },[]);
+    useEffect(() => {
+        if(!pageGroup)return;
+        const rdb = getDatabase()
+        const roomRef = ref(rdb,`rooms/${params.room_id}`)
+        onValue(roomRef,async(snapshot) => {
+            const key = snapshot.key || "";
+            const value = snapshot.val();
+            const writer = await handleGetUser(value.writer_id);
+            const room:Room = {id:key,title:value.title,writer:writer}
+            setRoom(room);
+        })
+    },[pageGroup])
+    useEffect(() => {
+        if(!pageGroup)return;
+        if(!room)return;
+        const rdb = getDatabase()
+        const roomMessagesRef = query(ref(rdb,`roomMessages/${params.room_id}`), limitToLast(100));
+        onChildAdded(roomMessagesRef,(snapshot) => {
+            const key = snapshot.key || "";
+            const value = snapshot.val();
+            const messageRef = ref(rdb,`messages/${key}`);
+            onValue(messageRef, async(snapshot) => {
+                const value = snapshot.val();
+                const sender = await handleGetUser(value.sender_id);
+                const message:Message = {key:key,body:value.body,sender:sender,room:room,type:value.type}
+                setMessages((prev) => [...prev,message]);
+            })
+        })
+        if(messages.length == 0)return;
+    },[room])
+    useEffect(() => {
+        return scrollBottom();
+    },[messages.length]);
     if(room&&pageGroup){
         return(
             <>
                 <GroupsHeader>
                     <p style={{fontWeight:"bold",fontSize:20,margin:16}}>{pageGroup.name}/{room.title}</p>
                 </GroupsHeader>
-                <ChatBody>チャット本文</ChatBody>
-                <ChatBar />
+                <ChatBody>
+                    <div>
+                        {
+                           messages.map((message,i,lastUser) => {
+                                if(i == 0 || lastUser.at(i-1)?.sender.id !== message.sender.id){
+                                    return(
+                                        <div key = {i} style={{minHeight:"50px",margin:4,display:"flex",marginTop:20}}>
+                                            <img src={message.sender.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
+                                            <div style={{flexGrow:1,padding:2,marginLeft:8}}>
+                                                <p style={{fontWeight:"bold"}}>{message.sender.name}</p>
+                                                {
+                                                    (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
+                                                }
+                                                {
+                                                    (message.type==="formula")&&
+                                                        <math-field read-only>
+                                                            {message.body}
+                                                        </math-field>
+                                                }
+                                                
+                                            </div>
+                                        </div>
+                                    )
+                                }else{
+                                    return(
+                                        <div key = {i} style={{marginLeft:4,display:"flex"}}>
+                                            <div style={{width:"48px"}}>
+                                            </div>
+                                            <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
+                                                {
+                                                    (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
+                                                }
+                                                {
+                                                    (message.type==="formula")&&
+                                                        <math-field read-only>
+                                                            {message.body}
+                                                        </math-field>
+                                                }
+                                                
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                            }) 
+                        }
+                    </div>
+                </ChatBody>
+                <ChatBar room_id={params.room_id} message={message} setMessage={setMessage} />
             </>
         );
     }

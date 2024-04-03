@@ -1,6 +1,7 @@
+"use client"
+import { useState } from "react";
 import { ChatBody } from "../components/base/ChatBody";
 import { GroupsHeader } from "../components/base/GroupsHeader";
-
 export default function Page() {
     return (
         <>
