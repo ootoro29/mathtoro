@@ -2,9 +2,10 @@
 import { useAuth } from "@/context/auth";
 import 'mathlive'
 import { Box, Button, chakra, Input } from "@chakra-ui/react";
-import { getDatabase, push, ref, set } from "firebase/database";
+import { getDatabase, push, ref, serverTimestamp, set } from "firebase/database";
 import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { MathfieldElement } from "mathlive";
+import { Timestamp } from "firebase-admin/firestore";
 
 declare global {
     namespace JSX {
@@ -29,11 +30,13 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                 body: message,
                 sender_id:user.id,
                 room_id: room_id,
+                sendAt: serverTimestamp(),
                 type:(isFormula)?"formula":"chat"
             }).then(async(message) => {
                 const dbRoomMessagesRef = ref(rdb,`roomMessages/${room_id}/${message.key}`);
                 await set(dbRoomMessagesRef,{
-                    exist: true
+                    exist: true,
+                    sendAt: serverTimestamp(),
                 })
                 const dbUserMessagesRef = ref(rdb,`userMessages/${user.id}/${message.key}`);
                 await set(dbUserMessagesRef,{
@@ -52,6 +55,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
             return
         }
     }
+    
     return(
         <Box bg = "gray.200" >
             <Box bg = "gray.400" height={"25px"} color={"white"} >
