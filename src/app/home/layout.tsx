@@ -38,7 +38,7 @@ export default function RootLayout({
   },[user]);
   if(user){
     return (
-      <div style={{display:"flex",flexDirection:"column",height:"100dvh",width:"100%"}}>
+      <div style={{display:"flex",flexDirection:"column",height:"100svh",width:"100%"}}>
           <div style={{background:"black",color:"white",width:"100%",height:"25px",fontSize:18}}>Mathtoro</div>
           <Box style={{display:"flex",flexGrow:1,minWidth:0}}>
               <div>
