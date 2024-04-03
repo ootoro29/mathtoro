@@ -23,9 +23,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <ChakraProvider>
-            <div style={{height:"100%"}}>
-              {children}
-            </div>
+            {children}
           </ChakraProvider>
         </AuthProvider>
       </body>

@@ -14,6 +14,7 @@ import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLas
 import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
+import 'mathlive'
 import { useEffect, useState } from "react";
 import { MathfieldElement } from "mathlive";
 
@@ -124,9 +125,9 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                             
                            messages.map((message,i,lastUser) => {
                                 const sender = members.find((u) => (u.id === message.sender_id));
-                                if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id){
+                                if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id || true){
                                     return(
-                                        <div key = {i} style={{minHeight:"50px",margin:4,display:"flex",marginTop:20}}>
+                                        <div key = {i} style={{minHeight:"50px",maxHeight:"none",margin:4,display:"flex",marginTop:20}}>
                                             <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
                                             <div style={{flexGrow:1,padding:2,marginLeft:8}}>
                                                 <p style={{fontWeight:"bold"}}>{sender?.name}</p>
@@ -134,10 +135,12 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                     (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
                                                 }
                                                 {
+                                                    
                                                     (message.type==="formula")&&
                                                         <math-field read-only>
                                                             {message.body}
                                                         </math-field>
+                                                        
                                                 }
                                                 
                                             </div>
@@ -171,5 +174,5 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                 <ChatBar room_id={params.room_id} message={message} setMessage={setMessage} />
             </>
         );
-    }
+    }//
 }

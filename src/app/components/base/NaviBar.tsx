@@ -23,7 +23,6 @@ const Navi =css`
         width:250px;
         height:calc(100% - 25px);
     }
-    display:block;
     width:300px;
     height:100%;
     display:flex;
@@ -36,12 +35,6 @@ const Navimove = css`
     @media (max-width:834px){
         transform: translateX(250px);
     }
-`
-const NaviMenu = styled.div`
-    @media (max-width:834px){
-        display:block;
-    }
-    display:none;
 `
 const MenuButton = styled.div`
     @media (max-width:834px){
