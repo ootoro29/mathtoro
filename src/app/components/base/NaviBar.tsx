@@ -13,7 +13,7 @@ import { useState } from "react";
 import MenuIcon from '@mui/icons-material/Menu';
 import ClearIcon from '@mui/icons-material/Clear';
 
-//display:none;
+//
 const Navi =css`
     @media (max-width:834px){
         position:absolute;
@@ -21,6 +21,7 @@ const Navi =css`
         transform: translateX(0px);
         transition: all 300ms 0s ease-in-out;
         width:250px;
+        height:calc(100% - 25px);
     }
     display:block;
     width:300px;
@@ -78,7 +79,7 @@ export const NaviBar = ({currentUserPhotoURL, userName,groups}:{currentUserPhoto
                 </Link>
             </Box>
             <Box style={{flexGrow:1,display:"flex",flexDirection:"column"}} bg="gray.100" >
-                <Box style={{flexGrow:1, overflowY:"scroll",minHeight:0,flexBasis:0,scrollbarWidth:"none",msOverflowStyle:"none"}}>
+                <Box style={{flexGrow:1, overflowY:"scroll",maxHeight:"100%",minHeight:0,flexBasis:0,scrollbarWidth:"none",msOverflowStyle:"none"}}>
                     {
                         groups.map((group:Group,i) => (
                             <Link href={`/home/group/${group.key}`} key = {i} >
@@ -88,22 +89,22 @@ export const NaviBar = ({currentUserPhotoURL, userName,groups}:{currentUserPhoto
                             </Link>
                         ))
                     }
+                    <Link href={`/home/group/newgroup`}>
+                        <Box style={{height:"50px",width:"100%",display:"flex",justifyContent:"center",alignItems:"center"}}>
+                            <Button style={{width:"95%"}}
+                            bg="lightgreen" 
+                            _hover = {{
+                                background: "green.100",
+                            }}
+                            >
+                                <AddIcon />
+                            </Button>
+                        </Box>
+                    </Link>
                 </Box>
-                <Link href={`/home/group/newgroup`}>
-                    <Box style={{height:"50px",width:"100%",display:"flex",justifyContent:"center",alignItems:"center"}}>
-                        <Button style={{width:"80%"}}
-                        bg="lightgreen" 
-                        _hover = {{
-                            background: "green.100",
-                        }}
-                        >
-                            <AddIcon />
-                        </Button>
-                    </Box>
-                </Link>
             </Box>
-            <Link href={`/home/user/${user.id}`}>
-                <Box style={{display:"flex",height:"55px",padding:5}} bg={"lightgray"} >
+            <Link href={`/home/user/${user.id}`} style={{height:"55px"}} >
+                <Box style={{display:"flex",height:"100%",padding:5}} bg={"lightgray"} >
                     <img src={currentUserPhotoURL} alt="" width={48} height={48} style={{borderRadius:"50%"}} />
                     <p style={{fontSize:24, fontWeight:"bold", margin:3}}>{userName}</p>
                 </Box>

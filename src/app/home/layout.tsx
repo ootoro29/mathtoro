@@ -38,8 +38,10 @@ export default function RootLayout({
   },[user]);
   if(user){
     return (
-      <div style={{display:"flex",flexDirection:"column",height:"100dvh",width:"100%"}}>
-          <div style={{background:"black",color:"white",width:"100%",height:"25px",fontSize:18}}>Mathtoro</div>
+      <div style={{display:"flex",flexDirection:"column",height:"100dvh",width:"100%",minHeight:0}}>
+          <div style={{background:"black",width:"100%",height:"25px"}}>
+            <p style={{color:"white",fontSize:18}}>Mathtoro</p>
+          </div>
           <Box style={{display:"flex",flexGrow:1,minWidth:0}}>
               <div>
                 <NaviBar currentUserPhotoURL={user.photoURL} userName={user.name} groups={groups} />
