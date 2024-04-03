@@ -3,17 +3,18 @@ import { useAuth } from "@/context/auth";
 import 'mathlive'
 import { Box, Button, chakra, Input } from "@chakra-ui/react";
 import { getDatabase, push, ref, serverTimestamp, set } from "firebase/database";
-import { Dispatch, FormEvent, SetStateAction, useState } from "react";
+import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import { Timestamp } from "firebase-admin/firestore";
 
 declare global {
     namespace JSX {
-        interface IntrinsicElements {
+      interface IntrinsicElements {
         'math-field': React.DetailedHTMLProps<React.HTMLAttributes<MathfieldElement>, MathfieldElement>;
-        }
+      }
     }
-}
+  }
+
 export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
     const user = useAuth();
     const [isFormula,setIsFormula] = useState(false);
@@ -21,6 +22,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
     const [formulaMessage,setFormulaMessage] = useState("");
     const handleCreateMessage = async(e:FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        console.log(message);
         if(!user)return;
         if(message.replace(" ","").replace("　","")==="")return;
         try{
@@ -84,8 +86,8 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                         (isFormula)&&
                         <math-field
                             onInput={
-                                (evt: React.ChangeEvent<HTMLElement>) => {
-                                    const f = evt.target.value;
+                                (evt: FormEvent<MathfieldElement>) => {
+                                    const f = evt.currentTarget.value;
                                     setFormulaMessage(f)
                                     setMessage(f)
                                 }
