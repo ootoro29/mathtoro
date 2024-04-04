@@ -43,7 +43,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         return {id:"",name:"", photoURL: ""};
     }
     function scrollBottom(){
-        console.log("AAAAAAA");
         let chatArea = document.getElementById('chat-area');
         if(!chatArea)return;
         let chatAreaHeight = chatArea.scrollHeight;
@@ -88,7 +87,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         onChildAdded(roomMessagesRef,(snapshot) => {
             const key = snapshot.key || "";
             const value = snapshot.val();
-            console.log(key,value.sendAt);
             const messageRef = ref(rdb,`messages/${key}`);
             onValue(messageRef, (snapshot) => {
                 const value = snapshot.val();
@@ -113,6 +111,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         })
     },[pageGroup])
 
+    
     if(room&&pageGroup){
         return(
             <>
@@ -125,7 +124,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                             
                            messages.map((message,i,lastUser) => {
                                 const sender = members.find((u) => (u.id === message.sender_id));
-                                if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id || true){
+                                if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id ){
                                     return(
                                         <div key = {i} style={{minHeight:"50px",maxHeight:"none",margin:4,display:"flex",marginTop:20}}>
                                             <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
@@ -148,7 +147,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                     )
                                 }else{
                                     return(
-                                        <div key = {i} style={{marginLeft:4,display:"flex"}}>
+                                        <div key = {i} style={{maxHeight:"none",marginLeft:4,display:"flex"}}>
                                             <div style={{width:"48px"}}>
                                             </div>
                                             <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>

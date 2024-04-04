@@ -3,7 +3,7 @@ import { useAuth } from "@/context/auth";
 import 'mathlive'
 import { Box, Button, chakra, Input } from "@chakra-ui/react";
 import { getDatabase, push, ref, serverTimestamp, set } from "firebase/database";
-import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useState } from "react";
+import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -22,7 +22,6 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
     const [formulaMessage,setFormulaMessage] = useState("");
     const handleCreateMessage = async(e:FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log(message);
         if(!user)return;
         if(message.replace(" ","").replace("　","")==="")return;
         try{
@@ -57,9 +56,17 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
             return
         }
     }
+    const mf = useRef<MathfieldElement>(new MathfieldElement);
+    useEffect(() => {
+        const container = document.getElementById("chat-bar");
+        if(!container)return;
+        window.mathVirtualKeyboard.addEventListener("geometrychange", () => {
+            container.style.height = (90+window.mathVirtualKeyboard.boundingRect.height)+"px";
+        });
+    },[]);
     
     return(
-        <Box bg = "gray.200" >
+        <Box bg = "gray.200" id = "chat-bar" height={"90px"} >
             <Box bg = "gray.400" height={"25px"} color={"white"} >
                 <label style={{fontWeight:"bold",margin:3}}>数式表示</label>
                 <input 
@@ -85,6 +92,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                     {
                         (isFormula)&&
                         <math-field
+                            ref = {mf}
                             onInput={
                                 (evt: FormEvent<MathfieldElement>) => {
                                     const f = evt.currentTarget.value;
@@ -92,6 +100,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                                     setMessage(f)
                                 }
                             }
+                            id = {"formula"}
                             style={{width:100+"%",minHeight:45+"px"}}
                             math-mode-space = {"\\:"}
                         >
