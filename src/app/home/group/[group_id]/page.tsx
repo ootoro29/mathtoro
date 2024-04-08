@@ -155,7 +155,7 @@ export default function Page({params}:{params:{group_id:string}}){
                             <div style={{display:"flex", overflowY:"scroll",flexDirection:"column",width:"100%",maxHeight:400}}>
                                 {
                                     rooms.map((room:Room,i) => (
-                                        <div style={{border:"gray solid 2px",width:"95%",float:"left",height:"60px", padding:2,margin:4,flexShrink:0,display:"flex"}}  >
+                                        <div key = {i} style={{border:"gray solid 2px",width:"95%",float:"left",height:"60px", padding:2,margin:4,flexShrink:0,display:"flex"}}  >
                                             <div style={{flexGrow:1}}>
                                                 <p style={{fontSize:25,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
                                                 <p style={{fontSize:12,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {room.writer.name}</p>

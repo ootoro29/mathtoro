@@ -18,7 +18,6 @@ import 'mathlive'
 import { useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import Link from "next/link";
-import { render } from "react-dom";
 
 declare global {
     namespace JSX {
