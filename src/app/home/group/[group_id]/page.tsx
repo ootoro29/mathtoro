@@ -1,20 +1,20 @@
 "use client"
 
 import { FirebaseError } from "firebase/app";
-import { getDatabase, onChildAdded, ref,onValue, push, set, child } from "firebase/database";
-import { FormEvent, useEffect, useState } from "react";
+import { getDatabase, onChildAdded, ref,onValue, push, set, child, query, equalTo, orderByChild, limitToFirst, orderByKey, orderByValue } from "firebase/database";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Group } from "@/types/group";
 import { GroupsHeader } from "@/app/components/base/GroupsHeader";
 import { ChatBody } from "@/app/components/base/ChatBody";
 import { User } from "@/types/user";
 import { useAuth } from "@/context/auth";
 import { useRouter } from "next/navigation";
-import { Button, chakra, Input } from "@chakra-ui/react";
+import { Button, calc, chakra, Input, MenuItem, Select } from "@chakra-ui/react";
 import { Room } from "@/types/room";
 import { db } from "@/lib/firebase/config";
-import { doc, getDoc } from "firebase/firestore";
-import { Phone } from "@mui/icons-material";
+import { doc, getDoc, limitToLast } from "firebase/firestore";
 import Link from "next/link";
+import { RoomType } from "@/types/roomtype";
 
 export default function Page({params}:{params:{group_id:string}}){
     const user = useAuth();
@@ -24,6 +24,7 @@ export default function Page({params}:{params:{group_id:string}}){
     const[rooms, setRooms] = useState<Room[]>([]);
     const[roomName,setRoomName] = useState("");
     const[inviteID,setInviteID] = useState("");
+    const[type,setType] = useState<RoomType>({type:"quest"});
 
     const handleCreateRoom = async(e:FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -32,11 +33,12 @@ export default function Page({params}:{params:{group_id:string}}){
         if(!pageGroup)return;
         try{
             const db = getDatabase(); 
-            const dbRef = ref(db, 'rooms')
+            const dbRef = ref(db, 'rooms');
             await push(dbRef, {
                 title: roomName,
                 writer_id:user.id,
-                group_id: pageGroup.key
+                group_id: pageGroup.key,
+                type:type.type
             }).then(async(room) => {
                 const dbGroupRoomRef = ref(db,`groupRooms/${params.group_id}/${room.key}`);
                 await set(dbGroupRoomRef,{
@@ -54,6 +56,25 @@ export default function Page({params}:{params:{group_id:string}}){
             return
         }
     }
+    function convertRoomType(value:string) {
+        const roomType:RoomType = {type:"quest"};
+        switch(value){
+            case "quest":
+                roomType.type = "quest"
+            case "point":
+                roomType.type = "point"
+            case "done":
+                roomType.type = "done"
+            case "other":
+                roomType.type = "other"
+            case "talk":
+                roomType.type = "talk"
+        }
+        return roomType;
+    }
+    const handleRoomType = (value:string) => {
+        setType(convertRoomType(value));
+    }
     const handleGetUser = async(user_id:string) =>{
         const ref = doc(db,`users/${user_id}`);
         const snap = await getDoc(ref);
@@ -66,8 +87,8 @@ export default function Page({params}:{params:{group_id:string}}){
 
     useEffect(() => {
         try {
-            const rdb = getDatabase()
-            const rdbRef = ref(rdb,`groups/${params.group_id}`)
+            const rdb = getDatabase();
+            const rdbRef = ref(rdb,`groups/${params.group_id}`);
             return onValue(rdbRef,async(snapshot) => {
                 const key = snapshot.key || "";
                 const value = snapshot.val();
@@ -100,9 +121,11 @@ export default function Page({params}:{params:{group_id:string}}){
             const key = snapshot.key || "";
             const groupRoomsRef = ref(rdb,`rooms/${key}`)
             onValue(groupRoomsRef,async(snaproom) => {
+                console.log(snaproom,snaproom.exists());
+                if(!snaproom.exists()) return;
                 const value = snaproom.val();
                 const writer = await handleGetUser(value.writer_id);
-                const room:Room = {id:key,title:value.title,writer:writer}
+                const room:Room = {id:key,title:value.title,writer:writer,type:value.type}
                 setRooms((prev) => [...prev,room]);
             })
         })
@@ -129,15 +152,26 @@ export default function Page({params}:{params:{group_id:string}}){
                     {   (rooms.length!=0)&&
                         <div style={{margin:4}}>
                             <p>Rooms</p>
-                            <div style={{display:"flex", overflowX:"scroll",flexBasis:0,width:500}}>
+                            <div style={{display:"flex", overflowY:"scroll",flexDirection:"column",width:"100%",maxHeight:400}}>
                                 {
                                     rooms.map((room:Room,i) => (
-                                        <Link href={`/home/group/${params.group_id}/${room.id}`} key = {i}>
-                                            <div style={{border:"gray solid 2px",width:"100px",float:"left",height:"140px", padding:2,margin:4,flexShrink:0}}  >
-                                                <p style={{fontSize:14,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
-                                                <p style={{fontSize:10,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.writer.name}</p>
+                                        <div style={{border:"gray solid 2px",width:"95%",float:"left",height:"60px", padding:2,margin:4,flexShrink:0,display:"flex"}}  >
+                                            <div style={{flexGrow:1}}>
+                                                <p style={{fontSize:25,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
+                                                <p style={{fontSize:12,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {room.writer.name}</p>
                                             </div>
-                                        </Link>
+                                            <div style={{display:"flex",flexDirection:"column"}}>
+                                                <div style={{flexGrow:1}}>
+
+                                                </div>
+                                                <div style={{margin:8}}>
+                                                    <Link href={`/home/group/${params.group_id}/${room.id}`} key = {i}>
+                                                        <Button>入場</Button>
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                     ))
                                 }
                             </div>
@@ -146,7 +180,13 @@ export default function Page({params}:{params:{group_id:string}}){
                     <chakra.form onSubmit = {handleCreateRoom}>
                         <label>ルーム名</label>
                         <Input type="text" value={roomName} maxWidth={"300px"} margin={4} onChange={(e) => {setRoomName(e.target.value)}} />
-                        <Button type="submit"> 作成</Button>
+                        <Select onChange={(evt) => handleRoomType(evt.target.value)} width={300} margin={4} marginTop={0}>
+                            <option value="quest">質問</option>
+                            <option value="talk">雑談</option>
+                            <option value="point">解説</option>
+                            <option value="other">その他</option>
+                        </Select>
+                        <Button type="submit" margin={4} marginTop={0}> 作成</Button>
                     </chakra.form>
                     <p>Members</p>
                     

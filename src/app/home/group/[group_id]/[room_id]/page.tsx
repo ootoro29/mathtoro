@@ -15,8 +15,10 @@ import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import 'mathlive'
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
+import Link from "next/link";
+import { render } from "react-dom";
 
 declare global {
     namespace JSX {
@@ -28,6 +30,7 @@ declare global {
 export default function Page({params}:{params:{group_id:string,room_id:string}}){
     const user = useAuth();
     const router = useRouter();
+    const mathRef = useRef<MathfieldElement>(new MathfieldElement);
     const [pageGroup,setPageGroup] = useState<Group>();
     const [room,setRoom] = useState<Room>();
     const [messages,setMessages] = useState<Message[]>([]);
@@ -43,13 +46,19 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         return {id:"",name:"", photoURL: ""};
     }
     function scrollBottom(){
-        let chatArea = document.getElementById('chat-area');
+        const chatArea = document.getElementById('chat-area');
         if(!chatArea)return;
-        let chatAreaHeight = chatArea.scrollHeight;
-        chatArea.scrollTop = chatAreaHeight;
-        let bottom = chatArea.scrollHeight - chatArea.clientHeight;
+        chatArea.scrollTop = chatArea.scrollHeight;
+        const bottom = chatArea.scrollHeight - chatArea.clientHeight;
+        console.log(chatArea.scrollHeight);
         chatArea.scroll(0, bottom);
     }
+    useEffect(() => {
+        const chatArea = document.getElementById('chat-list');
+        if(!chatArea)return;
+        chatArea.addEventListener("load",() => alert('load'));
+        setTimeout(scrollBottom,200);
+    },[messages])
     useEffect(() => {
         try {
             const rdb = getDatabase()
@@ -71,11 +80,11 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         if(!pageGroup)return;
         const rdb = getDatabase()
         const roomRef = ref(rdb,`rooms/${params.room_id}`)
-        onValue(roomRef,async(snapshot) => {
+        return onValue(roomRef,async(snapshot) => {
             const key = snapshot.key || "";
             const value = snapshot.val();
             const writer = await handleGetUser(value.writer_id);
-            const room:Room = {id:key,title:value.title,writer:writer}
+            const room:Room = {id:key,title:value.title,writer:writer,type:value.type}
             setRoom(room);
         })
     },[pageGroup])
@@ -84,7 +93,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         if(!room)return;
         const rdb = getDatabase()
         const roomMessagesRef = query(ref(rdb,`roomMessages/${params.room_id}`), limitToLast(100),orderByChild(`/sendAt`));
-        onChildAdded(roomMessagesRef,(snapshot) => {
+        return onChildAdded(roomMessagesRef,(snapshot) => {
             const key = snapshot.key || "";
             const value = snapshot.val();
             const messageRef = ref(rdb,`messages/${key}`);
@@ -96,14 +105,13 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             })
         })
     },[room])
-    useEffect(() => {
-        return scrollBottom();
-    },[messages.length]);
+    
 
     useEffect(() => {
         if(!pageGroup)return;
         const rdb = getDatabase()
         const groupMembersRef = ref(rdb,`groupUsers/${pageGroup.key}`)
+
         return onChildAdded(groupMembersRef,async(snapshot) => {
             const key = snapshot.key || "";
             const member = await handleGetUser(key);
@@ -116,10 +124,10 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         return(
             <>
                 <GroupsHeader>
-                    <p style={{fontWeight:"bold",fontSize:20,margin:16}}>{pageGroup.name}/{room.title}</p>
+                    <p style={{fontWeight:"bold",fontSize:20,margin:16}}><Link href={`/home/group/${params.group_id}`}>{pageGroup.name}</Link>/{room.title}</p>
                 </GroupsHeader>
                 <ChatBody>
-                    <div>
+                    <div id = "chat-list">
                         {
                             
                            messages.map((message,i,lastUser) => {
@@ -136,10 +144,9 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                 {
                                                     
                                                     (message.type==="formula")&&
-                                                        <math-field read-only>
+                                                        <math-field id={`math-read${i}`} read-only>
                                                             {message.body}
-                                                        </math-field>
-                                                        
+                                                        </math-field>     
                                                 }
                                                 
                                             </div>
@@ -156,7 +163,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                 }
                                                 {
                                                     (message.type==="formula")&&
-                                                        <math-field read-only>
+                                                        <math-field id={`math-read${i}`} read-only>
                                                             {message.body}
                                                         </math-field>
                                                 }
@@ -166,12 +173,11 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                     )
                                 }
                             }) 
-                            
                         }
                     </div>
                 </ChatBody>
                 <ChatBar room_id={params.room_id} message={message} setMessage={setMessage} />
             </>
         );
-    }//
+    }
 }
