@@ -30,7 +30,6 @@ declare global {
 export default function Page({params}:{params:{group_id:string,room_id:string}}){
     const user = useAuth();
     const router = useRouter();
-    const mathRef = useRef<MathfieldElement>(new MathfieldElement);
     const [pageGroup,setPageGroup] = useState<Group>();
     const [room,setRoom] = useState<Room>();
     const [messages,setMessages] = useState<Message[]>([]);
