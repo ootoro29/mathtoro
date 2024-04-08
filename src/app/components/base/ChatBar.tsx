@@ -56,7 +56,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
             return
         }
     }
-    const mf = useRef<MathfieldElement>(new MathfieldElement);
+    const mf = useRef<MathfieldElement|null>(null);
     useEffect(() => {
         const container = document.getElementById("chat-bar");
         if(!container)return;
