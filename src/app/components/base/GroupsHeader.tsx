@@ -8,6 +8,7 @@ const Header = styled.div`
     @media (max-width:834px){
         margin-left:55px;
     }
+    width:100%;
     margin-left:0px;
 `
 

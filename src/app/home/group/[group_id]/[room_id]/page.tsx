@@ -10,7 +10,7 @@ import { Room } from "@/types/room";
 import { User } from "@/types/user";
 import { Button } from "@chakra-ui/react";
 import { FirebaseError } from "firebase/app";
-import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild } from "firebase/database";
+import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild, update } from "firebase/database";
 import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
@@ -34,6 +34,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [messages,setMessages] = useState<Message[]>([]);
     const [members,setMembers] = useState<User[]>([]);
     const [message,setMessage] = useState<string>("");
+    const [isRoomLoad,setIsRoomLoad] = useState<Boolean>(false);
     const handleGetUser = async(user_id:string) =>{
         const ref = doc(db,`users/${user_id}`);
         const snap = await getDoc(ref);
@@ -43,12 +44,41 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         }
         return {id:"",name:"", photoURL: ""};
     }
+    const handleSoleve = async() =>{
+        if(!room)return;
+        try{
+            const db = getDatabase(); 
+            const dbRef = ref(db, `rooms/${room.id}`);
+            await update(dbRef, {
+                type:"done"
+            })
+            return
+        }catch(e){
+            console.log(e);
+            return
+        }
+    }
+    const handleUnsoleve = async() =>{
+        if(!room)return;
+        try{
+            const db = getDatabase(); 
+            const dbRef = ref(db, `rooms/${room.id}`);
+            await update(dbRef, {
+                type:"quest"
+            }).then(async(room) => {
+
+            })
+            return
+        }catch(e){
+            console.log(e);
+            return
+        }
+    }
     function scrollBottom(){
         const chatArea = document.getElementById('chat-area');
         if(!chatArea)return;
         chatArea.scrollTop = chatArea.scrollHeight;
         const bottom = chatArea.scrollHeight - chatArea.clientHeight;
-        console.log(chatArea.scrollHeight);
         chatArea.scroll(0, bottom);
     }
     useEffect(() => {
@@ -84,6 +114,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             const writer = await handleGetUser(value.writer_id);
             const room:Room = {id:key,title:value.title,writer:writer,type:value.type}
             setRoom(room);
+            setIsRoomLoad(true);
         })
     },[pageGroup])
     useEffect(() => {
@@ -102,7 +133,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                 setMessages((prev) => [...prev,message]);
             })
         })
-    },[room])
+    },[isRoomLoad])
     
 
     useEffect(() => {
@@ -118,11 +149,30 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     },[pageGroup])
 
     
-    if(room&&pageGroup){
+    if(room&&pageGroup&&user){
         return(
             <>
                 <GroupsHeader>
-                    <p style={{fontWeight:"bold",fontSize:20,margin:16}}><Link href={`/home/group/${params.group_id}`}>{pageGroup.name}</Link>/{room.title}</p>
+                    <div style={{display:"flex",width:"100%"}}>
+                        <div style={{flexGrow:1}}>
+                            <p style={{fontWeight:"bold",fontSize:20,margin:16}}><Link href={`/home/group/${params.group_id}`}>{pageGroup.name}</Link>/{room.title}</p>
+                        </div>
+                        {
+                            (room.type=="quest"&&room.writer.id === user.id)&&
+                            <div style={{display:"flex"}}>
+                                <p style={{fontSize:18,margin:17,marginRight:4}}>未解決</p>
+                                <Button margin={3} onClick={handleSoleve}>解決</Button>
+                            </div>
+                        }
+                        {
+                            (room.type=="done"&&room.writer.id === user.id)&&
+                            <div style={{display:"flex"}}>
+                                <p style={{fontSize:18,margin:17,marginRight:4}}>解決済</p>
+                                <Button margin={3} onClick={handleUnsoleve}>未解決</Button>
+                            </div>
+                        }
+
+                    </div>
                 </GroupsHeader>
                 <ChatBody>
                     <div id = "chat-list">

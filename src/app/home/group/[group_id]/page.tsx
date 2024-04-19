@@ -15,6 +15,7 @@ import { db } from "@/lib/firebase/config";
 import { doc, getDoc, limitToLast } from "firebase/firestore";
 import Link from "next/link";
 import { RoomType } from "@/types/roomtype";
+import { RoomListItem } from "@/app/components/base/RoomListItem";
 
 export default function Page({params}:{params:{group_id:string}}){
     const user = useAuth();
@@ -27,7 +28,7 @@ export default function Page({params}:{params:{group_id:string}}){
     const[type,setType] = useState<RoomType>({type:"quest"});
 
     const handleCreateRoom = async(e:FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
+        e.preventDefault();
         if(roomName == "")return;
         if(!user)return;
         if(!pageGroup)return;
@@ -61,17 +62,24 @@ export default function Page({params}:{params:{group_id:string}}){
         switch(value){
             case "quest":
                 roomType.type = "quest"
+                break;
             case "point":
                 roomType.type = "point"
+                break;
             case "done":
                 roomType.type = "done"
+                break;
             case "other":
                 roomType.type = "other"
+                break;
             case "talk":
                 roomType.type = "talk"
+                break;
         }
+        
         return roomType;
     }
+    
     const handleRoomType = (value:string) => {
         setType(convertRoomType(value));
     }
@@ -121,11 +129,11 @@ export default function Page({params}:{params:{group_id:string}}){
             const key = snapshot.key || "";
             const groupRoomsRef = ref(rdb,`rooms/${key}`)
             onValue(groupRoomsRef,async(snaproom) => {
-                console.log(snaproom,snaproom.exists());
                 if(!snaproom.exists()) return;
                 const value = snaproom.val();
                 const writer = await handleGetUser(value.writer_id);
                 const room:Room = {id:key,title:value.title,writer:writer,type:value.type}
+                console.log(value.type);
                 setRooms((prev) => [...prev,room]);
             })
         })
@@ -154,25 +162,11 @@ export default function Page({params}:{params:{group_id:string}}){
                             <p>Rooms</p>
                             <div style={{display:"flex", overflowY:"scroll",flexDirection:"column",width:"100%",maxHeight:400}}>
                                 {
-                                    rooms.map((room:Room,i) => (
-                                        <div key = {i} style={{border:"gray solid 2px",width:"95%",float:"left",height:"60px", padding:2,margin:4,flexShrink:0,display:"flex"}}  >
-                                            <div style={{flexGrow:1}}>
-                                                <p style={{fontSize:25,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
-                                                <p style={{fontSize:12,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {room.writer.name}</p>
-                                            </div>
-                                            <div style={{display:"flex",flexDirection:"column"}}>
-                                                <div style={{flexGrow:1}}>
-
-                                                </div>
-                                                <div style={{margin:8}}>
-                                                    <Link href={`/home/group/${params.group_id}/${room.id}`} key = {i}>
-                                                        <Button>入場</Button>
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                    ))
+                                    rooms.map((room:Room,i) => {
+                                        return(
+                                            <RoomListItem i={i} group_id={params.group_id} room={room} />
+                                        );
+                                    })
                                 }
                             </div>
                         </div>
@@ -204,3 +198,4 @@ export default function Page({params}:{params:{group_id:string}}){
         );
     }
 }
+

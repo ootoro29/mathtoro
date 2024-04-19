@@ -5,5 +5,5 @@ export type Room = {
     id:string;
     title:string;
     writer:User;
-    type:RoomType;
+    type:string;
 }

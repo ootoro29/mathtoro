@@ -3,15 +3,16 @@
 import { useAuth } from "@/context/auth";
 import styled from "@emotion/styled";
 import Image from "next/image";
-import { Box, Button } from "@chakra-ui/react";
+import { Box, Button, Menu } from "@chakra-ui/react";
 import Link from "next/link";
 import { User } from "@/types/user";
 import AddIcon from '@mui/icons-material/Add';
 import { Group } from "@/types/group";
 import { css } from "@emotion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MenuIcon from '@mui/icons-material/Menu';
 import ClearIcon from '@mui/icons-material/Clear';
+import { usePathname, useRouter } from "next/navigation";
 
 //
 const Navi =css`
@@ -36,7 +37,7 @@ const Navimove = css`
         transform: translateX(250px);
     }
 `
-const MenuButton = styled.div`
+const MenuButton = css`
     @media (max-width:834px){
         display:block;
     }
@@ -54,16 +55,42 @@ const MenuButton = styled.div`
 export const NaviBar = ({currentUserPhotoURL, userName,groups}:{currentUserPhotoURL:string,userName:string,groups:Group[]}) => {
     const user = useAuth() as User;
     const [open,setOpen] = useState(false);
+    const pathname = usePathname();
+    useEffect(() => {
+        setOpen(false)
+    },[pathname])
+    useEffect(() => {
+        const Naviel = document.getElementById('navi-bar');
+        const Menu = document.getElementById('menu');
+        if (!Naviel || !Menu) return;
+
+        const hundleClickOutside = (e: MouseEvent) => {
+            if (!(Naviel.contains(e.target as Node)||Menu.contains(e.target as Node))) {
+                setOpen(false)
+            }else{
+                if(Menu.contains(e.target as Node)){
+                    setOpen(!open)
+                }
+            }
+        };
+
+        document.addEventListener("click", hundleClickOutside);
+
+        return () => {
+            document.removeEventListener("click", hundleClickOutside);
+        };
+    }, [open]);
+
     return(
-        <div css={[Navi,open&&Navimove]}>
-            <MenuButton onClick={() => setOpen(!open)} >
+        <div css={[Navi,open&&Navimove]} id="navi-bar">
+            <div css={MenuButton}  id ="menu">
                 {
                     (!open)&&<MenuIcon style={{fontWeight:"bold",fontSize:50,margin:5}} />
                 }
                 {
                     (open)&&<ClearIcon style={{fontWeight:"bold",fontSize:50,margin:5}} />
                 }
-            </MenuButton>
+            </div>
             <Box bg={"gray.300"} >
                 <Link href={"/home"}>
                     <Box style = {{height:"60px",width:"100%",display:"flex",justifyContent:"center",alignItems:"center"}} >
