@@ -164,7 +164,9 @@ export default function Page({params}:{params:{group_id:string}}){
                                 {
                                     rooms.map((room:Room,i) => {
                                         return(
-                                            <RoomListItem i={i} group_id={params.group_id} room={room} />
+                                            <div key = {i}>
+                                                <RoomListItem group_id={params.group_id} room={room} />
+                                            </div>
                                         );
                                     })
                                 }
