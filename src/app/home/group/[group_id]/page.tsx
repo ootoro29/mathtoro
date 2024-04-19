@@ -133,9 +133,8 @@ export default function Page({params}:{params:{group_id:string}}){
                 const value = snaproom.val();
                 const writer = await handleGetUser(value.writer_id);
                 const room:Room = {id:key,title:value.title,writer:writer,type:value.type}
-                console.log(value.type);
                 setRooms((prev) => [...prev,room]);
-            })
+            },{onlyOnce: true})
         })
     },[pageGroup])
 
