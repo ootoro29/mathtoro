@@ -46,7 +46,7 @@ export default function RootLayout({
               <div>
                 <NaviBar currentUserPhotoURL={user.photoURL} userName={user.name} groups={groups} />
               </div>
-              <Box style={{flexGrow:1,display:"flex",flexDirection:"column",maxWidth: "100%"}} >
+              <Box style={{flexGrow:1,display:"flex",flexDirection:"column",minWidth:0,maxWidth: "100%"}} >
                   {children}
               </Box>
           </Box>

@@ -5,10 +5,12 @@ import { useAuth } from "@/context/auth";
 import { Group } from "@/types/group";
 import { Box,Input,Button,chakra } from "@chakra-ui/react";
 import { getDatabase, onChildAdded, push, ref, set } from "firebase/database";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 export default function Page(){
     const user = useAuth();
+    const router = useRouter();
     const [groupName,setGroupName] = useState("");
     const handleCreateGroup = async(e:FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -32,6 +34,7 @@ export default function Page(){
                 await push(dbInviteRef,{
                     name:groupName
                 })
+                router.push(`/home/group/${group.key}`);
             })
             setGroupName('')
         }catch(e){
