@@ -126,7 +126,7 @@ export const NaviBar = ({currentUserPhotoURL, userName,groups}:{currentUserPhoto
             <Link href={`/home/user/${user.id}`} style={{height:"55px"}} >
                 <Box style={{display:"flex",height:"100%",padding:5}} bg={"lightgray"} >
                     <img src={currentUserPhotoURL} alt="" width={48} height={48} style={{borderRadius:"50%"}} />
-                    <p style={{fontSize:24, fontWeight:"bold", margin:3}}>{userName}</p>
+                    <p style={{fontSize:24, fontWeight:"bold", margin:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{userName}</p>
                 </Box>
             </Link>
         </div>
