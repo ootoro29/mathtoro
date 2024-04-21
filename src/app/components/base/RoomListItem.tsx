@@ -38,39 +38,31 @@ export const RoomListItem = ({group_id,room}:{group_id:string,room:Room}) => {
         );
     }else if(room.type=== "done"){    
         return(
-            <div style={{border:"rgba(0,200,0) solid 2.5px",width:"95%",float:"left",height:"60px", padding:2,margin:4,flexShrink:0,display:"flex"}}  >
-                <div style={{flexGrow:1}}>
-                    <p style={{fontSize:25,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
-                    <p style={{fontSize:12,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {room.writer.name} type: {roomTypeToString(room.type)}</p>
+            <div style={{border:"rgba(0,200,0) solid 2.5px",maxWidth:"100%",height:"60px",margin:4,display:"flex"}}  >
+                <div style={{flexGrow:1,minWidth:0}} >
+                    <p style={{fontSize:24,maxWidth:"100%",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
+                    <p style={{fontSize:10,maxWidth:"100%",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {room.writer.name} type: {roomTypeToString(room.type)}</p>
                 </div>
-                <div style={{display:"flex",flexDirection:"column"}}>
-                    <div style={{flexGrow:1}}>
-    
-                    </div>
-                    <div style={{margin:8}}>
-                        <Link href={`/home/group/${group_id}/${room.id}`}>
-                            <Button background={"green.200"} _hover={{background:"green.100"}}>入場</Button>
-                        </Link>
-                    </div>
+                <div style={{margin:4,marginTop:8}}>
+                    <Link href={`/home/group/${group_id}/${room.id}`}>
+                        <Button background={"green.200"} _hover={{background:"green.100"}}>入場</Button>
+                        
+                    </Link>
                 </div>
             </div>
         );
     }
     return(
-        <div style={{border:"gray solid 2.5px",width:"95%",float:"left",height:"60px", padding:2,margin:4,flexShrink:0,display:"flex"}}  >
-            <div style={{flexGrow:1}}>
-                <p style={{fontSize:24,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
-                <p style={{fontSize:10,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {room.writer.name} type: {roomTypeToString(room.type)}</p>
+        <div style={{border:"gray solid 2.5px",maxWidth:"100%",height:"60px",margin:4,display:"flex"}}  >
+            <div style={{flexGrow:1,minWidth:0}} >
+                <p style={{fontSize:24,maxWidth:"100%",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
+                <p style={{fontSize:10,maxWidth:"100%",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {room.writer.name} type: {roomTypeToString(room.type)}</p>
             </div>
-            <div style={{display:"flex",flexDirection:"column"}}>
-                <div style={{flexGrow:1}}>
-
-                </div>
-                <div style={{margin:8}}>
-                    <Link href={`/home/group/${group_id}/${room.id}`}>
-                        <Button background={"gray.200"} _hover={{background:"gray.100"}}>入場</Button>
-                    </Link>
-                </div>
+            <div style={{margin:4,marginTop:8}}>
+                <Link href={`/home/group/${group_id}/${room.id}`}>
+                    <Button background={"gray.200"} _hover={{background:"gray.100"}}>入場</Button>
+                    
+                </Link>
             </div>
         </div>
     );
