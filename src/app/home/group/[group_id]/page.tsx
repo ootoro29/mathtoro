@@ -17,6 +17,37 @@ import Link from "next/link";
 import { RoomType } from "@/types/roomtype";
 import { RoomListItem } from "@/app/components/base/RoomListItem";
 import { GroupBody } from "@/app/components/base/GroupBody";
+import styled from "@emotion/styled";
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import HomeIcon from '@mui/icons-material/Home';
+
+const HomeMemberList = styled.div`
+    @media(max-width:834px){
+        display:none;   
+    }
+    display:flex;
+    flex-direction:column;
+`;
+const MembersList = ({members}:{members:User[]}) => {
+    return(
+        <div>
+            <p>Members</p>
+            <div style={{flexGrow:1,margin:3,maxWidth:200,minWidth:200,maxHeight:400,overflowY:"scroll"}}>
+                {
+                    members.map((member:User,i) => (
+                        <Link key = {i} href={`/home/user/${member.id}`}>
+                            <div style={{display:"flex",margin:6,marginRight:0,marginLeft:0}}>
+                                
+                                <img src={member.photoURL} alt="" width={36} height={36} style={{borderRadius:"50%",minWidth:36,minHeight:36}} />
+                                <p style={{margin:4,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{member.name}</p>
+                            </div>
+                        </Link>
+                    ))
+                }
+            </div>
+        </div>
+    );
+}
 
 export default function Page({params}:{params:{group_id:string}}){
     const user = useAuth();
@@ -154,7 +185,13 @@ export default function Page({params}:{params:{group_id:string}}){
         return(
             <>
                 <GroupsHeader>
-                    <p style={{fontWeight:"bold",fontSize:20,margin:16}}>{pageGroup.name}</p>
+                    <div style={{display:"flex"}}>
+                        <p style={{flexGrow:1,fontWeight:"bold",fontSize:20,margin:15}}>{pageGroup.name}</p>
+                        <div style={{margin:9}}>
+                            <HomeIcon style={{fontSize:30,margin:2}} />
+                            <PeopleAltIcon style={{fontSize:30,margin:2}} />
+                        </div>
+                    </div>
                 </GroupsHeader>
                 <GroupBody>
                     <div style={{display:"flex",minHeight:"100%"}}>
@@ -188,22 +225,9 @@ export default function Page({params}:{params:{group_id:string}}){
                             </chakra.form>
                             <p>招待URL: {window.location.origin}/invite/{pageGroup.key}/{inviteID}</p>
                         </div>
-                        <div style={{display:"flex",flexDirection:"column"}}>
-                            <p>Members</p>
-                            <div style={{flexGrow:1,margin:3,maxWidth:200,minWidth:200,maxHeight:400,overflowY:"scroll"}}>
-                                {
-                                    members.map((member:User,i) => (
-                                        <Link key = {i} href={`/home/user/${member.id}`}>
-                                            <div style={{display:"flex",margin:6,marginRight:0,marginLeft:0}}>
-                                                
-                                                <img src={member.photoURL} alt="" width={36} height={36} style={{borderRadius:"50%",minWidth:36,minHeight:36}} />
-                                                <p style={{margin:4,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{member.name}</p>
-                                            </div>
-                                        </Link>
-                                    ))
-                                }
-                            </div>
-                        </div>
+                        <HomeMemberList>
+                            <MembersList members={members} />
+                        </HomeMemberList>
                     </div>
                 </GroupBody>
             </>

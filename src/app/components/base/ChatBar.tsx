@@ -6,7 +6,8 @@ import { getDatabase, push, ref, serverTimestamp, set } from "firebase/database"
 import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import { TextareaAutosize, TextField } from "@mui/material";
-
+import SendIcon from '@mui/icons-material/Send';
+import styled from "@emotion/styled";
 declare global {
     namespace JSX {
       interface IntrinsicElements {
@@ -15,6 +16,13 @@ declare global {
     }
   }
 
+const SendBottonCSS = styled.div`
+    display:none;
+    @media (max-width:834px){
+        display:flex;
+        flex-direction:column;
+    }
+`;
 export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
     const user = useAuth();
     const [isFormula,setIsFormula] = useState(false);
@@ -99,7 +107,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                     }} 
                 ></input>
             </Box>
-            <form>
+            <chakra.form>
                 <Box minHeight={"30px"} style={{display:"flex",margin:10}}>
                     {
                         (!isFormula)&&
@@ -108,9 +116,12 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                             onChange = {(e) => {
                                 if(enter){
                                     if(!shift){
-                                        handleCreateMessage();
-                                        e.preventDefault();
-                                        return;
+                                        if (window.matchMedia('(max-width: 834px)').matches) {
+                                        } else if (window.matchMedia('(min-width:834px)').matches) {
+                                            handleCreateMessage();
+                                            e.preventDefault();
+                                            return;
+                                        }
                                     }
                                 }
                                 (isFormula)?setFormulaMessage(e.target.value):setChatMessage(e.target.value)
@@ -162,8 +173,14 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                             {formulaMessage}
                         </math-field>
                     }
+                    <SendBottonCSS>
+                        <div style={{flexGrow:1}}></div>
+                        <Button onClick={handleCreateMessage}>
+                            <SendIcon style={{fontSize:35,margin:2}}/>
+                        </Button>
+                    </SendBottonCSS>
                 </Box>
-            </form>
+            </chakra.form>
         </Box>
     );
 }
