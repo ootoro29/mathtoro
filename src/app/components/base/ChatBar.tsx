@@ -1,11 +1,11 @@
 'use client'
 import { useAuth } from "@/context/auth";
 import 'mathlive'
-import { Box, Button, chakra, Input } from "@chakra-ui/react";
+import { Box, Button, chakra, Input, Textarea } from "@chakra-ui/react";
 import { getDatabase, push, ref, serverTimestamp, set } from "firebase/database";
 import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
-import { Timestamp } from "firebase-admin/firestore";
+import { TextareaAutosize, TextField } from "@mui/material";
 
 declare global {
     namespace JSX {
@@ -20,10 +20,12 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
     const [isFormula,setIsFormula] = useState(false);
     const [chatMessage,setChatMessage] = useState("");
     const [formulaMessage,setFormulaMessage] = useState("");
-    const handleCreateMessage = async(e:FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const [composing, setComposition] = useState(false);
+    const [shift, setShift] = useState(false);
+    const [enter, setEnter] = useState(false);
+    const handleCreateMessage = async() => {
         if(!user)return;
-        if(message.replace(" ","").replace("　","")==="")return;
+        if(message.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
         try{
             const rdb = getDatabase();
             const messageRef = ref(rdb,`messages`);
@@ -58,15 +60,34 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
     }
     const mf = useRef<MathfieldElement>(new MathfieldElement);
     useEffect(() => {
+        document.addEventListener("keydown",(e) => {
+            if(e.key == "Shift"){
+                setShift(true);
+            }
+            if(e.key == "Enter"){
+                setEnter(true);
+            }
+        })
+        document.addEventListener("keyup",(e) => {
+            if(e.key == "Shift"){
+                setShift(false);
+            }
+            if(e.key == "Enter"){
+                setEnter(false);
+            }
+        })
+    },[])
+    useEffect(() => {
         const container = document.getElementById("chat-bar");
         if(!container)return;
         window.mathVirtualKeyboard.addEventListener("geometrychange", () => {
             container.style.height = (90+window.mathVirtualKeyboard.boundingRect.height)+"px";
         });
+        
     },[]);
     
     return(
-        <Box bg = "gray.200" id = "chat-bar" height={"90px"} >
+        <Box bg = "gray.200" id = "chat-bar" minHeight={"90px"} >
             <Box bg = "gray.400" height={"25px"} color={"white"} >
                 <label style={{fontWeight:"bold",margin:3}}>数式表示</label>
                 <input 
@@ -74,20 +95,49 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                     checked={isFormula} 
                     onChange={(e) => {
                         setMessage((e.target.checked)?formulaMessage:chatMessage);
-                        setIsFormula(e.target.checked)
+                        setIsFormula(e.target.checked);
                     }} 
                 ></input>
             </Box>
-            <chakra.form onSubmit = {handleCreateMessage}>
+            <form>
                 <Box minHeight={"30px"} style={{display:"flex",margin:10}}>
                     {
                         (!isFormula)&&
-                        <Input 
+                        <TextareaAutosize
+                            value={(isFormula)?formulaMessage:chatMessage} 
+                            onChange = {(e) => {
+                                if(enter){
+                                    if(!shift){
+                                        handleCreateMessage();
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                }
+                                (isFormula)?setFormulaMessage(e.target.value):setChatMessage(e.target.value)
+                                
+                                setMessage(e.target.value)
+                            }}
+                            onCompositionStart={() => setComposition(true)}
+                            onCompositionEnd={() => setComposition(false)}   
+                            minRows={1}
+                            maxRows={10} 
+                            style={{flexGrow:1,paddingLeft:3,paddingBottom:3,paddingTop:3,border:"black solid 1px",background:"white",resize:"none",minHeight:30+"px"}}
+                        >
+
+                        </TextareaAutosize>
+                        /*
+                        <textarea 
                             value={(isFormula)?formulaMessage:chatMessage} 
                             onChange = {(e) => {
                                 (isFormula)?setFormulaMessage(e.target.value):setChatMessage(e.target.value)
                                 setMessage(e.target.value)
-                            }} style={{border:"black solid 1px",background:"white",minHeight:45+"px"}}></Input>
+                            }} 
+                            rows = {1}
+                            style={{flexGrow:1,padding:2,border:"black solid 1px",background:"white",resize:"none"}}
+                        />
+                        */
+                        
+                        
                     }
                     {
                         (isFormula)&&
@@ -103,13 +153,17 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                             id = {"formula"}
                             style={{width:100+"%",minHeight:45+"px"}}
                             math-mode-space = {"\\:"}
+                            onKeyDownCapture={(e) =>{
+                                if(e.key == "Enter"){
+                                    handleCreateMessage();
+                                }
+                            }}
                         >
                             {formulaMessage}
                         </math-field>
                     }
-                    <Button type="submit" style={{border:"black solid 1px"}} height={"50px"} >送信</Button>
                 </Box>
-            </chakra.form>
+            </form>
         </Box>
     );
 }

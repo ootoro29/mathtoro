@@ -184,10 +184,10 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                     return(
                                         <div key = {i} style={{minHeight:"50px",maxHeight:"none",margin:4,display:"flex",marginTop:20}}>
                                             <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
-                                            <div style={{flexGrow:1,padding:2,marginLeft:8}}>
+                                            <div style={{flexGrow:1,padding:2,marginLeft:8,minWidth:0}}>
                                                 <p style={{fontWeight:"bold"}}>{sender?.name}</p>
                                                 {
-                                                    (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
+                                                    (message.type==="chat")&&<p style={{wordBreak:"break-all",width:"90%",whiteSpace: 'pre-line'}}>{message.body}</p>
                                                 }
                                                 {
                                                     
@@ -196,18 +196,17 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                             {message.body}
                                                         </math-field>     
                                                 }
-                                                
                                             </div>
                                         </div>
                                     )
                                 }else{
                                     return(
                                         <div key = {i} style={{maxHeight:"none",marginLeft:4,display:"flex"}}>
-                                            <div style={{width:"48px"}}>
+                                            <div style={{minWidth:"48px"}}>
                                             </div>
                                             <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
                                                 {
-                                                    (message.type==="chat")&&<p style={{textIndent:5}}>{message.body}</p>
+                                                    (message.type==="chat")&&<p style={{wordBreak:"break-all",width:"90%",whiteSpace: 'pre-line'}}>{message.body}</p>
                                                 }
                                                 {
                                                     (message.type==="formula")&&

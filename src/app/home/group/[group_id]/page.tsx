@@ -190,7 +190,7 @@ export default function Page({params}:{params:{group_id:string}}){
                         </div>
                         <div style={{display:"flex",flexDirection:"column"}}>
                             <p>Members</p>
-                            <div style={{flexGrow:1,margin:3,maxWidth:150,minWidth:150,maxHeight:400,overflowY:"scroll"}}>
+                            <div style={{flexGrow:1,margin:3,maxWidth:200,minWidth:200,maxHeight:400,overflowY:"scroll"}}>
                                 {
                                     members.map((member:User,i) => (
                                         <Link key = {i} href={`/home/user/${member.id}`}>
