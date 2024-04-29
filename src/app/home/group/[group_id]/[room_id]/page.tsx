@@ -13,18 +13,38 @@ import { FirebaseError } from "firebase/app";
 import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild, update } from "firebase/database";
 import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
+import CreateIcon from '@mui/icons-material/Create';
 import 'mathlive'
 import { useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import Link from "next/link";
-
+import styled from "@emotion/styled";
 declare global {
     namespace JSX {
         interface IntrinsicElements {
         'math-field': React.DetailedHTMLProps<React.HTMLAttributes<MathfieldElement>, MathfieldElement>;
         }
     }
+}
+const MessageTextItem = ({messageBody}:{messageBody:string}) =>{
+    const MessageTextItemCSS = styled.p`
+        work-break:break-all;
+        width: 90%;
+        white-space: pre-line;
+    `;
+    return(
+        <MessageTextItemCSS>
+            {messageBody}
+        </MessageTextItemCSS>
+    );
+}
+
+const MessageFormulaItem = ({i,messageBody}:{i:number,messageBody:string}) =>{
+    return(
+        <math-field id={`math-read${i}`} read-only>
+            {messageBody}
+        </math-field>
+    );
 }
 export default function Page({params}:{params:{group_id:string,room_id:string}}){
     const user = useAuth();
@@ -35,6 +55,27 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [members,setMembers] = useState<User[]>([]);
     const [message,setMessage] = useState<string>("");
     const [isRoomLoad,setIsRoomLoad] = useState<Boolean>(false);
+    const [selectIndex,setSelectIndex] = useState<number|null>(null);
+    const MessageMainItemCSS = styled.div`
+        min-height:50px;
+        max-hegith:none;
+        margin:4px;
+        display:flex;
+        margin-top:20px;
+        padding:2px;
+        &:hover {
+            background:#F0F0F0;
+        }
+    `;
+    const MessageSubItemCSS = styled.div`
+        max-hegith:none;
+        margin-left:4px;
+        display:flex;
+        padding:2px;
+        &:hover {
+            background:#F0F0F0;
+        }
+    `;
     const handleGetUser = async(user_id:string) =>{
         const ref = doc(db,`users/${user_id}`);
         const snap = await getDoc(ref);
@@ -128,7 +169,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             const messageRef = ref(rdb,`messages/${key}`);
             onValue(messageRef, (snapshot) => {
                 const value = snapshot.val();
-                //const sender = await handleGetUser(value.sender_id);
                 const message:Message = {key:key,body:value.body,sender_id:value.sender_id,room:room,type:value.type}
                 setMessages((prev) => [...prev,message]);
             })
@@ -182,41 +222,41 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                 const sender = members.find((u) => (u.id === message.sender_id));
                                 if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id ){
                                     return(
-                                        <div key = {i} style={{minHeight:"50px",maxHeight:"none",margin:4,display:"flex",marginTop:20}}>
+                                        <MessageMainItemCSS onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
                                             <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
                                             <div style={{flexGrow:1,padding:2,marginLeft:8,minWidth:0}}>
                                                 <p style={{fontWeight:"bold"}}>{sender?.name}</p>
                                                 {
-                                                    (message.type==="chat")&&<p style={{wordBreak:"break-all",width:"90%",whiteSpace: 'pre-line'}}>{message.body}</p>
+                                                    (message.type==="chat")&&<MessageTextItem messageBody={message.body} />
                                                 }
                                                 {
                                                     
-                                                    (message.type==="formula")&&
-                                                        <math-field id={`math-read${i}`} read-only>
-                                                            {message.body}
-                                                        </math-field>     
+                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={message.body} />
+                                                             
                                                 }
                                             </div>
-                                        </div>
+                                            {
+                                                (i == selectIndex && message.sender_id == user.id) && <CreateIcon/>
+                                            }
+                                        </MessageMainItemCSS>
                                     )
                                 }else{
                                     return(
-                                        <div key = {i} style={{maxHeight:"none",marginLeft:4,display:"flex"}}>
+                                        <MessageSubItemCSS onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
                                             <div style={{minWidth:"48px"}}>
                                             </div>
                                             <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
                                                 {
-                                                    (message.type==="chat")&&<p style={{wordBreak:"break-all",width:"90%",whiteSpace: 'pre-line'}}>{message.body}</p>
+                                                    (message.type==="chat")&&<MessageTextItem messageBody={message.body} />
                                                 }
                                                 {
-                                                    (message.type==="formula")&&
-                                                        <math-field id={`math-read${i}`} read-only>
-                                                            {message.body}
-                                                        </math-field>
+                                                    (message.type==="formula")&& (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={message.body} />
                                                 }
-                                                
                                             </div>
-                                        </div>
+                                            {
+                                                (i == selectIndex && message.sender_id == user.id) && <CreateIcon/>
+                                            }
+                                        </MessageSubItemCSS>
                                     )
                                 }
                             }) 
