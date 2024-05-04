@@ -2,12 +2,13 @@
 import { useAuth } from "@/context/auth";
 import 'mathlive'
 import { Box, Button, chakra, Input, Textarea } from "@chakra-ui/react";
-import { getDatabase, push, ref, serverTimestamp, set } from "firebase/database";
+import { getDatabase, push, ref, serverTimestamp, set, update } from "firebase/database";
 import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import { TextareaAutosize, TextField } from "@mui/material";
 import SendIcon from '@mui/icons-material/Send';
 import styled from "@emotion/styled";
+import { Message } from "@/types/message";
 declare global {
     namespace JSX {
       interface IntrinsicElements {
@@ -23,7 +24,7 @@ const SendBottonCSS = styled.div`
         flex-direction:column;
     }
 `;
-export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
+export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEditMessageType,room_id,message,setMessage}:{clickID:string|null,setClickMessage:Dispatch<SetStateAction<Message|null>>,editMessage:string,setEditMessage:Dispatch<SetStateAction<string>>,isEditMessageType:string,room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
     const user = useAuth();
     const [isFormula,setIsFormula] = useState(false);
     const [chatMessage,setChatMessage] = useState("");
@@ -33,32 +34,43 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
     const [enter, setEnter] = useState(false);
     const handleCreateMessage = async() => {
         if(!user)return;
-        if(message.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
+        if(clickID===null&&message.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
+        if(clickID!==null&&editMessage.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
         try{
-            const rdb = getDatabase();
-            const messageRef = ref(rdb,`messages`);
-            await push(messageRef, {
-                body: message,
-                sender_id:user.id,
-                room_id: room_id,
-                sendAt: serverTimestamp(),
-                type:(isFormula)?"formula":"chat"
-            }).then(async(message) => {
-                const dbRoomMessagesRef = ref(rdb,`roomMessages/${room_id}/${message.key}`);
-                await set(dbRoomMessagesRef,{
-                    exist: true,
+            if(clickID === null){
+                const rdb = getDatabase();
+                const messageRef = ref(rdb,`messages`);
+                await push(messageRef, {
+                    body: message,
+                    sender_id:user.id,
+                    room_id: room_id,
                     sendAt: serverTimestamp(),
+                    type:(isFormula)?"formula":"chat"
+                }).then(async(message) => {
+                    const dbRoomMessagesRef = ref(rdb,`roomMessages/${room_id}/${message.key}`);
+                    await set(dbRoomMessagesRef,{
+                        exist: true,
+                        sendAt: serverTimestamp(),
+                    })
+                    const dbUserMessagesRef = ref(rdb,`userMessages/${user.id}/${message.key}`);
+                    await set(dbUserMessagesRef,{
+                        exist: true
+                    })
                 })
-                const dbUserMessagesRef = ref(rdb,`userMessages/${user.id}/${message.key}`);
-                await set(dbUserMessagesRef,{
-                    exist: true
-                })
-            })
-            setMessage('');
-            if(isFormula){
-                setFormulaMessage("");
+                setMessage('');
+                if(isFormula){
+                    setFormulaMessage("");
+                }else{
+                    setChatMessage("");
+                }
             }else{
-                setChatMessage("");
+                const rdb = getDatabase();
+                const messageRef = ref(rdb,`messages/${clickID}`);
+                await update(messageRef,{
+                    body:editMessage
+                })
+                setEditMessage("");
+                setClickMessage(null);
             }
             return
         }catch(e){
@@ -93,7 +105,20 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
         });
         
     },[]);
-    
+    useEffect(() => {
+        if(isEditMessageType == "chat"){
+            setIsFormula(false);
+        }else if(isEditMessageType == "formula"){
+            setIsFormula(true);
+        }
+    },[clickID])
+    useEffect(() => {
+        if(!mf.current)return;
+        mf.current.value = formulaMessage;
+        if(isEditMessageType == "formula"){
+            mf.current.value = editMessage;
+        }
+    },[clickID,isFormula])
     return(
         <Box bg = "gray.200" id = "chat-bar" minHeight={"90px"} >
             <Box bg = "gray.400" height={"25px"} color={"white"} >
@@ -105,6 +130,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                         setMessage((e.target.checked)?formulaMessage:chatMessage);
                         setIsFormula(e.target.checked);
                     }} 
+                    disabled={(clickID!==null)}
                 ></input>
             </Box>
             <chakra.form>
@@ -112,7 +138,7 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                     {
                         (!isFormula)&&
                         <TextareaAutosize
-                            value={(isFormula)?formulaMessage:chatMessage} 
+                            value={(clickID!==null && isEditMessageType=="chat")?editMessage:chatMessage} 
                             onChange = {(e) => {
                                 if(enter){
                                     if(!shift){
@@ -124,7 +150,11 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                                         }
                                     }
                                 }
-                                (isFormula)?setFormulaMessage(e.target.value):setChatMessage(e.target.value)
+                                if((clickID!==null)){
+                                    setEditMessage(e.target.value)
+                                }else{
+                                    setChatMessage(e.target.value)
+                                }
                                 
                                 setMessage(e.target.value)
                             }}
@@ -136,32 +166,24 @@ export const ChatBar = ({room_id,message,setMessage}:{room_id:string,message:str
                         >
 
                         </TextareaAutosize>
-                        /*
-                        <textarea 
-                            value={(isFormula)?formulaMessage:chatMessage} 
-                            onChange = {(e) => {
-                                (isFormula)?setFormulaMessage(e.target.value):setChatMessage(e.target.value)
-                                setMessage(e.target.value)
-                            }} 
-                            rows = {1}
-                            style={{flexGrow:1,padding:2,border:"black solid 1px",background:"white",resize:"none"}}
-                        />
-                        */
-                        
-                        
                     }
                     {
                         (isFormula)&&
                         <math-field
                             ref = {mf}
+                            aria-valuetext={(clickID!==null)?editMessage:formulaMessage}
                             onInput={
                                 (evt: FormEvent<MathfieldElement>) => {
                                     const f = evt.currentTarget.value;
-                                    setFormulaMessage(f)
-                                    setMessage(f)
+                                    if(clickID!==null){
+                                        setEditMessage(f);
+                                    }else{
+                                        setFormulaMessage(f)
+                                        setMessage(f)
+                                    }
                                 }
                             }
-                            id = {"formula"}
+                            id = {"math-field"}
                             style={{width:100+"%",minHeight:45+"px"}}
                             math-mode-space = {"\\:"}
                             onKeyDownCapture={(e) =>{
