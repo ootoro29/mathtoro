@@ -1,7 +1,7 @@
 "use client"
 
 import { FirebaseError } from "firebase/app";
-import { getDatabase, onChildAdded, ref,onValue, push, set, child, query, equalTo, orderByChild, limitToFirst, orderByKey, orderByValue } from "firebase/database";
+import { getDatabase, onChildAdded, ref,onValue, push, set, child, query, equalTo, orderByChild, limitToFirst,limitToLast, orderByKey, orderByValue, serverTimestamp } from "firebase/database";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Group } from "@/types/group";
 import { GroupsHeader } from "@/app/components/base/GroupsHeader";
@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { Button, calc, chakra, Input, MenuItem, Select } from "@chakra-ui/react";
 import { Room } from "@/types/room";
 import { db } from "@/lib/firebase/config";
-import { doc, getDoc, limitToLast } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
 import { RoomType } from "@/types/roomtype";
 import { RoomListItem } from "@/app/components/base/RoomListItem";
@@ -71,15 +71,18 @@ export default function Page({params}:{params:{group_id:string}}){
                 title: roomName,
                 writer_id:user.id,
                 group_id: pageGroup.key,
-                type:type.type
+                type:type.type,
+                sendAt:serverTimestamp(),
             }).then(async(room) => {
                 const dbGroupRoomRef = ref(db,`groupRooms/${params.group_id}/${room.key}`);
                 await set(dbGroupRoomRef,{
-                    exist: true
+                    exist: true,
+                    sendAt:serverTimestamp(),
                 })
                 const dbUserRoomRef = ref(db,`userRooms/${user.id}/${room.key}`);
                 await set(dbUserRoomRef,{
-                    exist: true
+                    exist: true,
+                    sendAt:serverTimestamp(),
                 })
             })
             setRoomName('')
@@ -156,23 +159,23 @@ export default function Page({params}:{params:{group_id:string}}){
     useEffect(() => {
         if(!pageGroup)return;
         const rdb = getDatabase()
-        const groupRoomsRef = ref(rdb,`groupRooms/${pageGroup.key}`)
+        const groupRoomsRef = query(ref(rdb,`groupRooms/${pageGroup.key}`), limitToLast(100),orderByChild('/sendAt'))
         return onChildAdded(groupRoomsRef,(snapshot) => {
             const key = snapshot.key || "";
             const groupRoomsRef = ref(rdb,`rooms/${key}`)
             onValue(groupRoomsRef,async(snaproom) => {
                 if(!snaproom.exists()) return;
                 const value = snaproom.val();
-                const writer = await handleGetUser(value.writer_id);
-                const room:Room = {id:key,title:value.title,writer:writer,type:value.type}
+                //const writer = await handleGetUser(value.writer_id);
+                const room:Room = {id:key,title:value.title,writer_id:value.writer_id,type:value.type,sendAt:value.sendAt}
                 setRooms((prev) => {
                     const findex = prev.findIndex((v) => v.id == room.id);
+                    console.log(prev);
                     if(findex == -1){
-                        return [...prev,room];
+                        return [room,...prev];
                     }else{
                         return [...prev.slice(0,findex),room,...prev.slice(findex+1,prev.length)];
-                    }
-                    
+                    }                    
                 });
             })
         })
@@ -210,9 +213,12 @@ export default function Page({params}:{params:{group_id:string}}){
                                     <div style={{display:"flex", overflowY:"scroll",flexDirection:"column",width:"100%",maxHeight:400}}>
                                         {
                                             rooms.map((room:Room,i) => {
+                                                const writer = members.find((v) => (v.id == room.writer_id));
+                                                
+                                                if(!writer)return;
                                                 return(
                                                     <div key = {i}>
-                                                        <RoomListItem group_id={params.group_id} room={room} />
+                                                        <RoomListItem writer={writer} group_id={params.group_id} room={room} />
                                                     </div>
                                                 );
                                             })

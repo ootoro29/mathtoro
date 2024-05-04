@@ -212,8 +212,8 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         return onValue(roomRef,async(snapshot) => {
             const key = snapshot.key || "";
             const value = snapshot.val();
-            const writer = await handleGetUser(value.writer_id);
-            const room:Room = {id:key,title:value.title,writer:writer,type:value.type}
+            //const writer = await handleGetUser(value.writer_id);
+            const room:Room = {id:key,title:value.title,writer_id:value.writer_id,type:value.type,sendAt:value.sendAt}
             setRoom(room);
             setIsRoomLoad(true);
         })
@@ -278,14 +278,14 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                             <p style={{fontWeight:"bold",fontSize:20,margin:16}}><Link href={`/home/group/${params.group_id}`}>{pageGroup.name}</Link>/{room.title}</p>
                         </div>
                         {
-                            (room.type=="quest"&&room.writer.id === user.id)&&
+                            (room.type=="quest"&&room.writer_id === user.id)&&
                             <div style={{display:"flex"}}>
                                 <p style={{fontSize:18,margin:17,marginRight:4}}>未解決</p>
                                 <Button margin={3} onClick={handleSolve}>解決</Button>
                             </div>
                         }
                         {
-                            (room.type=="done"&&room.writer.id === user.id)&&
+                            (room.type=="done"&&room.writer_id === user.id)&&
                             <div style={{display:"flex"}}>
                                 <p style={{fontSize:18,margin:17,marginRight:4}}>解決済</p>
                                 <Button margin={3} onClick={handleUnsoleve}>未解決</Button>

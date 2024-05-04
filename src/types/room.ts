@@ -4,6 +4,7 @@ import { User } from "./user";
 export type Room = {
     id:string;
     title:string;
-    writer:User;
+    writer_id:string;
     type:string;
+    sendAt:string;
 }
