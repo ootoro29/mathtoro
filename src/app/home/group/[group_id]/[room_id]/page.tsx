@@ -11,11 +11,12 @@ import { Room } from "@/types/room";
 import { User } from "@/types/user";
 import { Button } from "@chakra-ui/react";
 import { FirebaseError } from "firebase/app";
-import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild, update } from "firebase/database";
+import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild, update, remove } from "firebase/database";
 import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import CreateIcon from '@mui/icons-material/Create';
 import ClearIcon from '@mui/icons-material/Clear';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import 'mathlive'
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
@@ -56,33 +57,6 @@ const MessageFormulaItem = ({i,messageBody}:{i:number,messageBody:string}) =>{
     );
 }
 
-const EditMessageButton = ({i,messageBody,selectIndex,clickIndex,setClickIndex,setEditMessage}:{i:number,messageBody:string,selectIndex:number|null,clickIndex:number|null,setClickIndex:Dispatch<SetStateAction<number|null>>,setEditMessage:Dispatch<SetStateAction<string>>}) => {
-    const EditMessageButtonCSS = styled.div`
-        position:relative;
-        right:20px;
-        font-size:1px;
-    `
-    if(i != clickIndex){
-        if(i != selectIndex)return;
-        return(
-            <EditMessageButtonCSS>
-                <CreateIcon  onClick = {() => {
-                    setClickIndex(i);
-                    setEditMessage(messageBody);
-                }}/>
-            </EditMessageButtonCSS>
-        );
-    }else{
-        return(
-            <EditMessageButtonCSS>
-                <ClearIcon  onClick = {() => {
-                    setClickIndex(null)
-                    setEditMessage("");
-                }}/>
-            </EditMessageButtonCSS>
-        );
-    }
-}
 export default function Page({params}:{params:{group_id:string,room_id:string}}){
     const user = useAuth();
     const router = useRouter();
@@ -92,8 +66,8 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [members,setMembers] = useState<User[]>([]);
     const [message,setMessage] = useState<string>("");
     const [isRoomLoad,setIsRoomLoad] = useState<Boolean>(false);
-    const [selectIndex,setSelectIndex] = useState<number|null>(null);
-    const [clickIndex,setClickIndex] = useState<number|null>(null);
+    const [selectID,setSelectID] = useState<string|null>(null);
+    const [clickMessage,setClickMessage] = useState<Message|null>(null);
     const [editMessage,setEditMessage] = useState<string>("");
     const MessageMainItemCSS = css`
         min-height:50px;
@@ -157,6 +131,49 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             return
         }
     }
+    const EditMessageButton = ({message}:{message:Message}) => {
+        const EditMessageButtonCSS = styled.div`
+            position:relative;
+            right:20px;
+            font-size:1px;
+            display:flex;
+        `
+        if(message.key != clickMessage?.key){
+            if(message.key != selectID)return;
+            return(
+                <EditMessageButtonCSS>
+                    <CreateIcon  onClick = {() => {
+                        setClickMessage(message);
+                        setEditMessage(message.body);
+                    }}/>
+                </EditMessageButtonCSS>
+            );
+        }else{
+            return(
+                <EditMessageButtonCSS>
+                    <DeleteForeverIcon style={{marginRight:5}} onClick = {async() => {
+                        if(!room)return;
+                        if(!user)return;
+                        setEditMessage("");
+                        setClickMessage(null);
+                        const rdb = getDatabase();
+                        const roomMessageRef = ref(rdb,`roomMessages/${room.id}/${message.key}`)
+                        await remove(roomMessageRef);
+                        const userMessageRef = ref(rdb,`userMessages/${user.id}/${message.key}`)
+                        await remove(userMessageRef);
+                        const messageRef = ref(rdb,`messages/${message.key}`)
+                        await remove(messageRef);
+                    }}/>
+                    <ClearIcon  onClick = {() => {
+                        setClickMessage(null)
+                        setEditMessage("");
+                    }}/>
+                </EditMessageButtonCSS>
+            );
+        }
+    }
+
+
     function scrollBottom(){
         const chatArea = document.getElementById('chat-area');
         if(!chatArea)return;
@@ -212,16 +229,28 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             const messageRef = ref(rdb,`messages/${key}`);
             onValue(messageRef, (snapshot) => {
                 const value = snapshot.val();
-                const message:Message = {key:key,body:value.body,sender_id:value.sender_id,room:room,type:value.type}
-                setMessages((prev) =>{
-                    const findex = prev.findIndex((v) => v.key == message.key);
-                    if(findex == -1){
-                        return [...prev,message];
-                    }else{
-                        return [...prev.slice(0,findex),message,...prev.slice(findex+1,prev.length)];
-                    }
-                    
-                });
+                if(value){
+                    const message:Message = {key:key,body:value.body,sender_id:value.sender_id,room:room,type:value.type}
+                    setMessages((prev) =>{
+                        const findex = prev.findIndex((v) => v.key == message.key);
+                        if(findex == -1){
+                            return [...prev,message];
+                        }else{
+                            return [...prev.slice(0,findex),message,...prev.slice(findex+1,prev.length)];
+                        }
+                        
+                    });
+                }else{
+                    setMessages((prev) =>{
+                        const findex = prev.findIndex((v) => v.key == key);
+                        if(findex != -1){
+                            return [...prev.slice(0,findex),...prev.slice(findex+1,prev.length)];
+                        }else{
+                            return [...prev];
+                        }
+                        
+                    });
+                }
             })
         })
     },[isRoomLoad])
@@ -273,42 +302,41 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                 const sender = members.find((u) => (u.id === message.sender_id));
                                 if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id ){
                                     return(
-                                        <div css = {[MessageMainItemCSS,(i!=clickIndex)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
+                                        <div css = {[MessageMainItemCSS,(message!==clickMessage)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectID(message.key)} onMouseLeave={() => setSelectID(null)} key = {i}>
                                             <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
                                             <div style={{flexGrow:1,padding:2,marginLeft:8,minWidth:0}}>
                                                 <p style={{fontWeight:"bold"}}>{sender?.name}</p>
                                                 {
-                                                    (message.type==="chat")&&<MessageTextItem messageBody={(i == clickIndex)?editMessage:message.body} />
+                                                    (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
                                                 }
                                                 {
                                                     
-                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(i == clickIndex)?editMessage:message.body} />
+                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
                                                              
                                                 }
                                             </div>
                                             {
                                                 (message.sender_id == user.id) &&
-                                                <EditMessageButton i={i} messageBody={message.body} selectIndex={selectIndex} clickIndex={clickIndex} setClickIndex = {setClickIndex} setEditMessage={setEditMessage} />
-                                                 
+                                                <EditMessageButton message={message}/>
                                             }
                                         </div>
                                     )
                                 }else{
                                     return(
-                                        <div css = {[MessageSubItemCSS,(i!=clickIndex)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
+                                        <div css = {[MessageSubItemCSS,(message!==clickMessage)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectID(message.key)} onMouseLeave={() => setSelectID(null)} key = {i}>
                                             <div style={{minWidth:"48px"}}>
                                             </div>
                                             <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
                                                 {
-                                                    (message.type==="chat")&&<MessageTextItem messageBody={(i == clickIndex)?editMessage:message.body} />
+                                                    (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
                                                 }
                                                 {
-                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(i == clickIndex)?editMessage:message.body} />
+                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
                                                 }
                                             </div>
                                             {
                                                 (message.sender_id == user.id) && 
-                                                <EditMessageButton i={i} messageBody={message.body} selectIndex={selectIndex} clickIndex= {clickIndex} setClickIndex = {setClickIndex} setEditMessage={setEditMessage} />
+                                                <EditMessageButton message={message}/>
                                             }
                                         </div>
                                     )
@@ -317,7 +345,8 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                         }
                     </div>
                 </ChatBody>
-                <ChatBar clickID = {(clickIndex===null)?null:messages[clickIndex].key} setClickIndex={setClickIndex} editMessage = {editMessage} setEditMessage = {setEditMessage} isEditMessageType={(clickIndex===null)?"":messages[clickIndex].type} room_id={params.room_id} message={message} setMessage={setMessage} />
+                
+                <ChatBar clickID = {(clickMessage)?clickMessage.key:null} setClickMessage={setClickMessage} editMessage = {editMessage} setEditMessage = {setEditMessage} isEditMessageType={(clickMessage)?clickMessage.type:""} room_id={params.room_id} message={message} setMessage={setMessage} />
             </>
         );
     }

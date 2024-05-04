@@ -8,6 +8,7 @@ import { MathfieldElement } from "mathlive";
 import { TextareaAutosize, TextField } from "@mui/material";
 import SendIcon from '@mui/icons-material/Send';
 import styled from "@emotion/styled";
+import { Message } from "@/types/message";
 declare global {
     namespace JSX {
       interface IntrinsicElements {
@@ -23,7 +24,7 @@ const SendBottonCSS = styled.div`
         flex-direction:column;
     }
 `;
-export const ChatBar = ({clickID,setClickIndex,editMessage,setEditMessage,isEditMessageType,room_id,message,setMessage}:{clickID:string|null,setClickIndex:Dispatch<SetStateAction<number|null>>,editMessage:string,setEditMessage:Dispatch<SetStateAction<string>>,isEditMessageType:string,room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
+export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEditMessageType,room_id,message,setMessage}:{clickID:string|null,setClickMessage:Dispatch<SetStateAction<Message|null>>,editMessage:string,setEditMessage:Dispatch<SetStateAction<string>>,isEditMessageType:string,room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
     const user = useAuth();
     const [isFormula,setIsFormula] = useState(false);
     const [chatMessage,setChatMessage] = useState("");
@@ -69,7 +70,7 @@ export const ChatBar = ({clickID,setClickIndex,editMessage,setEditMessage,isEdit
                     body:editMessage
                 })
                 setEditMessage("");
-                setClickIndex(null);
+                setClickMessage(null);
             }
             return
         }catch(e){
