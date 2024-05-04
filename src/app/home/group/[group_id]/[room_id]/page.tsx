@@ -1,4 +1,5 @@
 "use client"
+/** @jsxImportSource @emotion/react */ 
 import { ChatBar } from "@/app/components/base/ChatBar";
 import { ChatBody } from "@/app/components/base/ChatBody";
 import { GroupsHeader } from "@/app/components/base/GroupsHeader";
@@ -21,6 +22,7 @@ import { MathfieldElement } from "mathlive";
 import Link from "next/link";
 import styled from "@emotion/styled";
 import { DisabledByDefault } from "@mui/icons-material";
+import { css } from "@emotion/react";
 declare global {
     namespace JSX {
         interface IntrinsicElements {
@@ -42,8 +44,13 @@ const MessageTextItem = ({messageBody}:{messageBody:string}) =>{
 }
 
 const MessageFormulaItem = ({i,messageBody}:{i:number,messageBody:string}) =>{
+    const mf = useRef<MathfieldElement>(new MathfieldElement);
+    useEffect(() => {
+        if(!mf.current)return;
+        mf.current.value = messageBody;
+    },[messageBody])
     return(
-        <math-field id={`math-read${i}`} read-only>
+        <math-field ref = {mf} id={`math-read${i}`} read-only>
             {messageBody}
         </math-field>
     );
@@ -88,25 +95,28 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [selectIndex,setSelectIndex] = useState<number|null>(null);
     const [clickIndex,setClickIndex] = useState<number|null>(null);
     const [editMessage,setEditMessage] = useState<string>("");
-    const MessageMainItemCSS = styled.div`
+    const MessageMainItemCSS = css`
         min-height:50px;
         max-hegith:none;
         margin:4px;
         display:flex;
         margin-top:20px;
         padding:2px;
-        &:hover {
-            background:#F0F0F0;
-        }
+        
     `;
-    const MessageSubItemCSS = styled.div`
+    const MessageSubItemCSS = css`
         max-hegith:none;
         margin-left:4px;
         display:flex;
         padding:2px;
+    `;
+    const noClickMessageCss = css`
         &:hover {
             background:#F0F0F0;
         }
+    `
+    const clickMessageCSS = css`
+        background:#F0F0FF;
     `;
     const handleGetUser = async(user_id:string) =>{
         const ref = doc(db,`users/${user_id}`);
@@ -263,16 +273,16 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                 const sender = members.find((u) => (u.id === message.sender_id));
                                 if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id ){
                                     return(
-                                        <MessageMainItemCSS onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
+                                        <div css = {[MessageMainItemCSS,(i!=clickIndex)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
                                             <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
                                             <div style={{flexGrow:1,padding:2,marginLeft:8,minWidth:0}}>
                                                 <p style={{fontWeight:"bold"}}>{sender?.name}</p>
                                                 {
-                                                    (message.type==="chat")&&<MessageTextItem messageBody={message.body} />
+                                                    (message.type==="chat")&&<MessageTextItem messageBody={(i == clickIndex)?editMessage:message.body} />
                                                 }
                                                 {
                                                     
-                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={message.body} />
+                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(i == clickIndex)?editMessage:message.body} />
                                                              
                                                 }
                                             </div>
@@ -281,26 +291,26 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                 <EditMessageButton i={i} messageBody={message.body} selectIndex={selectIndex} clickIndex={clickIndex} setClickIndex = {setClickIndex} setEditMessage={setEditMessage} />
                                                  
                                             }
-                                        </MessageMainItemCSS>
+                                        </div>
                                     )
                                 }else{
                                     return(
-                                        <MessageSubItemCSS onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
+                                        <div css = {[MessageSubItemCSS,(i!=clickIndex)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectIndex(i)} onMouseLeave={() => setSelectIndex(null)} key = {i}>
                                             <div style={{minWidth:"48px"}}>
                                             </div>
                                             <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
                                                 {
-                                                    (message.type==="chat")&&<MessageTextItem messageBody={message.body} />
+                                                    (message.type==="chat")&&<MessageTextItem messageBody={(i == clickIndex)?editMessage:message.body} />
                                                 }
                                                 {
-                                                    (message.type==="formula")&& (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={message.body} />
+                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(i == clickIndex)?editMessage:message.body} />
                                                 }
                                             </div>
                                             {
                                                 (message.sender_id == user.id) && 
                                                 <EditMessageButton i={i} messageBody={message.body} selectIndex={selectIndex} clickIndex= {clickIndex} setClickIndex = {setClickIndex} setEditMessage={setEditMessage} />
                                             }
-                                        </MessageSubItemCSS>
+                                        </div>
                                     )
                                 }
                             }) 
