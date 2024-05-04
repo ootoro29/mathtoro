@@ -82,7 +82,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [pageGroup,setPageGroup] = useState<Group>();
     const [room,setRoom] = useState<Room>();
     const [messages,setMessages] = useState<Message[]>([]);
-    const [messagesList,setMessagesList] = useState<Message[]>([]);
     const [members,setMembers] = useState<User[]>([]);
     const [message,setMessage] = useState<string>("");
     const [isRoomLoad,setIsRoomLoad] = useState<Boolean>(false);
