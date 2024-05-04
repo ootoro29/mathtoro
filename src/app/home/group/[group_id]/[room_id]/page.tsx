@@ -14,11 +14,13 @@ import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLas
 import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import CreateIcon from '@mui/icons-material/Create';
+import ClearIcon from '@mui/icons-material/Clear';
 import 'mathlive'
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import Link from "next/link";
 import styled from "@emotion/styled";
+import { DisabledByDefault } from "@mui/icons-material";
 declare global {
     namespace JSX {
         interface IntrinsicElements {
@@ -46,16 +48,47 @@ const MessageFormulaItem = ({i,messageBody}:{i:number,messageBody:string}) =>{
         </math-field>
     );
 }
+
+const EditMessageButton = ({i,messageBody,selectIndex,clickIndex,setClickIndex,setEditMessage}:{i:number,messageBody:string,selectIndex:number|null,clickIndex:number|null,setClickIndex:Dispatch<SetStateAction<number|null>>,setEditMessage:Dispatch<SetStateAction<string>>}) => {
+    const EditMessageButtonCSS = styled.div`
+        position:relative;
+        right:20px;
+        font-size:1px;
+    `
+    if(i != clickIndex){
+        if(i != selectIndex)return;
+        return(
+            <EditMessageButtonCSS>
+                <CreateIcon  onClick = {() => {
+                    setClickIndex(i);
+                    setEditMessage(messageBody);
+                }}/>
+            </EditMessageButtonCSS>
+        );
+    }else{
+        return(
+            <EditMessageButtonCSS>
+                <ClearIcon  onClick = {() => {
+                    setClickIndex(null)
+                    setEditMessage("");
+                }}/>
+            </EditMessageButtonCSS>
+        );
+    }
+}
 export default function Page({params}:{params:{group_id:string,room_id:string}}){
     const user = useAuth();
     const router = useRouter();
     const [pageGroup,setPageGroup] = useState<Group>();
     const [room,setRoom] = useState<Room>();
     const [messages,setMessages] = useState<Message[]>([]);
+    const [messagesList,setMessagesList] = useState<Message[]>([]);
     const [members,setMembers] = useState<User[]>([]);
     const [message,setMessage] = useState<string>("");
     const [isRoomLoad,setIsRoomLoad] = useState<Boolean>(false);
     const [selectIndex,setSelectIndex] = useState<number|null>(null);
+    const [clickIndex,setClickIndex] = useState<number|null>(null);
+    const [editMessage,setEditMessage] = useState<string>("");
     const MessageMainItemCSS = styled.div`
         min-height:50px;
         max-hegith:none;
@@ -85,7 +118,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         }
         return {id:"",name:"", photoURL: ""};
     }
-    const handleSoleve = async() =>{
+    const handleSolve = async() =>{
         if(!room)return;
         try{
             const db = getDatabase(); 
@@ -128,6 +161,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         chatArea.addEventListener("load",() => alert('load'));
         setTimeout(scrollBottom,200);
     },[messages])
+    
     useEffect(() => {
         try {
             const rdb = getDatabase()
@@ -170,7 +204,15 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             onValue(messageRef, (snapshot) => {
                 const value = snapshot.val();
                 const message:Message = {key:key,body:value.body,sender_id:value.sender_id,room:room,type:value.type}
-                setMessages((prev) => [...prev,message]);
+                setMessages((prev) =>{
+                    const findex = prev.findIndex((v) => v.key == message.key);
+                    if(findex == -1){
+                        return [...prev,message];
+                    }else{
+                        return [...prev.slice(0,findex),message,...prev.slice(findex+1,prev.length)];
+                    }
+                    
+                });
             })
         })
     },[isRoomLoad])
@@ -201,7 +243,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                             (room.type=="quest"&&room.writer.id === user.id)&&
                             <div style={{display:"flex"}}>
                                 <p style={{fontSize:18,margin:17,marginRight:4}}>未解決</p>
-                                <Button margin={3} onClick={handleSoleve}>解決</Button>
+                                <Button margin={3} onClick={handleSolve}>解決</Button>
                             </div>
                         }
                         {
@@ -236,7 +278,9 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                 }
                                             </div>
                                             {
-                                                (i == selectIndex && message.sender_id == user.id) && <CreateIcon/>
+                                                (message.sender_id == user.id) &&
+                                                <EditMessageButton i={i} messageBody={message.body} selectIndex={selectIndex} clickIndex={clickIndex} setClickIndex = {setClickIndex} setEditMessage={setEditMessage} />
+                                                 
                                             }
                                         </MessageMainItemCSS>
                                     )
@@ -254,7 +298,8 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                 }
                                             </div>
                                             {
-                                                (i == selectIndex && message.sender_id == user.id) && <CreateIcon/>
+                                                (message.sender_id == user.id) && 
+                                                <EditMessageButton i={i} messageBody={message.body} selectIndex={selectIndex} clickIndex= {clickIndex} setClickIndex = {setClickIndex} setEditMessage={setEditMessage} />
                                             }
                                         </MessageSubItemCSS>
                                     )
@@ -263,7 +308,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                         }
                     </div>
                 </ChatBody>
-                <ChatBar room_id={params.room_id} message={message} setMessage={setMessage} />
+                <ChatBar clickID = {(clickIndex===null)?null:messages[clickIndex].key} setClickIndex={setClickIndex} editMessage = {editMessage} setEditMessage = {setEditMessage} isEditMessageType={(clickIndex===null)?"":messages[clickIndex].type} room_id={params.room_id} message={message} setMessage={setMessage} />
             </>
         );
     }
