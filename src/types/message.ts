@@ -1,4 +1,5 @@
 import { Room } from "./room";
+import { Image } from "./image";
 import { User } from "./user";
 
 export type Message = {
@@ -7,6 +8,7 @@ export type Message = {
     room:Room;
     body:string;
     type:"chat" | "formula";
+    images:string[];
 };
 
 

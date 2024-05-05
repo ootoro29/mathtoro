@@ -3,12 +3,16 @@ import { useAuth } from "@/context/auth";
 import 'mathlive'
 import { Box, Button, chakra, Input, Textarea } from "@chakra-ui/react";
 import { getDatabase, push, ref, serverTimestamp, set, update } from "firebase/database";
+import { ref as storageRef, uploadBytes } from "firebase/storage";
 import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
 import { TextareaAutosize, TextField } from "@mui/material";
 import SendIcon from '@mui/icons-material/Send';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import styled from "@emotion/styled";
 import { Message } from "@/types/message";
+import { Image } from "@/types/image";
+import { storage } from "@/lib/firebase/config";
 declare global {
     namespace JSX {
       interface IntrinsicElements {
@@ -24,7 +28,7 @@ const SendBottonCSS = styled.div`
         flex-direction:column;
     }
 `;
-export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEditMessageType,room_id,message,setMessage}:{clickID:string|null,setClickMessage:Dispatch<SetStateAction<Message|null>>,editMessage:string,setEditMessage:Dispatch<SetStateAction<string>>,isEditMessageType:string,room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
+export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,setEditMessage,isEditMessageType,room_id,message,setMessage}:{images:Image[],setImages:Dispatch<SetStateAction<Image[]>>,clickID:string|null,setClickMessage:Dispatch<SetStateAction<Message|null>>,editMessage:string,setEditMessage:Dispatch<SetStateAction<string>>,isEditMessageType:string,room_id:string,message:string,setMessage: Dispatch<SetStateAction<string>>}) => {
     const user = useAuth();
     const [isFormula,setIsFormula] = useState(false);
     const [chatMessage,setChatMessage] = useState("");
@@ -32,21 +36,44 @@ export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEd
     const [composing, setComposition] = useState(false);
     const [shift, setShift] = useState(false);
     const [enter, setEnter] = useState(false);
+    const inputImagesRef = useRef<HTMLInputElement>(null);
     const handleCreateMessage = async() => {
         if(!user)return;
-        if(clickID===null&&message.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
+        const Message = message;
+        const Images = images;
+        setMessage("");
+        if(isFormula){
+            setFormulaMessage("");
+        }else{
+            setChatMessage("");
+        }
+        if(clickID === null){
+            setImages([]);
+        }
+        if(clickID===null&&Images.length==0&&Message.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
         if(clickID!==null&&editMessage.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
         try{
             if(clickID === null){
                 const rdb = getDatabase();
                 const messageRef = ref(rdb,`messages`);
                 await push(messageRef, {
-                    body: message,
+                    body: Message,
                     sender_id:user.id,
                     room_id: room_id,
                     sendAt: serverTimestamp(),
                     type:(isFormula)?"formula":"chat"
                 }).then(async(message) => {
+                    for(let i = 0; i < Images.length; i++){
+                        const date = new Date().getTime();
+                        const name = Math.random().toString(36).slice(-8) + date;
+                        const strf = storageRef(storage,`/messages/${name}`);//.${Images[i].name.split('.').pop()}
+                        await uploadBytes(strf,Images[i].image).then(async(snapshot) => {
+                            const messageImage = ref(rdb,`messageImages/${message.key}/${snapshot.ref.fullPath.split('/').pop()}`);
+                            await set(messageImage,{
+                                number:i,
+                            })
+                        })
+                    }
                     const dbRoomMessagesRef = ref(rdb,`roomMessages/${room_id}/${message.key}`);
                     await set(dbRoomMessagesRef,{
                         exist: true,
@@ -57,12 +84,6 @@ export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEd
                         exist: true
                     })
                 })
-                setMessage('');
-                if(isFormula){
-                    setFormulaMessage("");
-                }else{
-                    setChatMessage("");
-                }
             }else{
                 const rdb = getDatabase();
                 const messageRef = ref(rdb,`messages/${clickID}`);
@@ -77,6 +98,45 @@ export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEd
             console.log(e);
             return
         }
+    }
+    const ImageList = () => {
+        const ImageListItemCSS = styled.div`
+            margin:5px;
+            padding:10px;
+            background:#d5d5d5;
+            min-width:250px;
+            max-width:0px;
+            height:260px;
+            border-radius:5px;
+        `;
+        const ImageDivItemCSS = styled.div`
+            background:#e5e5e5;
+            min-width:220px;
+            max-width:0px;
+            height:220px;
+            border-radius:5px;
+        `;
+        return(
+            <Box id="scroll" onWheel={(e) => {
+                const scrollElement = document.querySelector("#scroll");
+                if(!scrollElement)return;
+                if(Math.abs(e.deltaY) < Math.abs(e.deltaX))return;
+                e.preventDefault();
+                scrollElement.scrollLeft += e.deltaY;
+                
+            }} style={{width:"100%",minWidth:0,display:"flex",overflowX:"scroll", maxHeight:400,msOverflowStyle:"none",scrollbarWidth:"none"}}>
+                {//
+                    images.map((image,i) => (
+                        <ImageListItemCSS key = {i}>
+                            <ImageDivItemCSS>
+                                <img src={image.URL} alt={`Images[${i}]`} style={{width:"220px",height:"220px",objectFit:"contain"}} />
+                            </ImageDivItemCSS>
+                            <p style={{overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{image.name}</p>
+                        </ImageListItemCSS>
+                    ))
+                }
+            </Box>    
+        );
     }
     const mf = useRef<MathfieldElement>(new MathfieldElement);
     useEffect(() => {
@@ -120,7 +180,8 @@ export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEd
         }
     },[clickID,isFormula])
     return(
-        <Box bg = "gray.200" id = "chat-bar" minHeight={"90px"} >
+        <Box bg = "gray.200" id = "chat-bar" minHeight={"90px"} width="100%" >
+            <ImageList />
             <Box bg = "gray.400" height={"25px"} color={"white"} >
                 <label style={{fontWeight:"bold",margin:3}}>数式表示</label>
                 <input 
@@ -198,8 +259,34 @@ export const ChatBar = ({clickID,setClickMessage,editMessage,setEditMessage,isEd
                     <SendBottonCSS>
                         <div style={{flexGrow:1}}></div>
                         <Button onClick={handleCreateMessage}>
-                            <SendIcon style={{fontSize:35,margin:2}}/>
+                            <SendIcon style={{fontSize:20,margin:2}}/>
                         </Button>
+                    </SendBottonCSS>
+                    <SendBottonCSS>
+                        <div style={{flexGrow:1}}></div>
+                        <Button onClick={() => inputImagesRef.current?.click()}>
+                            <AddPhotoAlternateIcon style={{fontSize:20,margin:2}} />
+                        </Button>
+                        <input 
+                            multiple 
+                            ref = {inputImagesRef} 
+                            type="file" 
+                            style={{display:"none"}} 
+                            onChange={(e) => {
+                                const files = e.target.files;
+                                if(!files)return;
+                                alert(files.length);
+                                if(typeof files[0] !== 'undefined') {
+                                    for(let i = 0; i < files.length; i++){
+                                        console.log(files[i].type);
+                                        if(files[i].type == "image/png" || files[i].type == "image/jpg" || files[i].type == "image/gif"){
+                                            const image = {image:files[i],URL:window.URL.createObjectURL(files[i]),name:files[i].name};
+                                            setImages((prev) => [...prev,image])
+                                        }
+                                    }
+                                } 
+                            }} 
+                        />
                     </SendBottonCSS>
                 </Box>
             </chakra.form>
