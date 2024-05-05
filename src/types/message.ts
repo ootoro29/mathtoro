@@ -8,6 +8,7 @@ export type Message = {
     room:Room;
     body:string;
     type:"chat" | "formula";
+    images:string[];
 };
 
 

@@ -4,14 +4,14 @@ import { ChatBar } from "@/app/components/base/ChatBar";
 import { ChatBody } from "@/app/components/base/ChatBody";
 import { GroupsHeader } from "@/app/components/base/GroupsHeader";
 import { useAuth } from "@/context/auth";
-import { db } from "@/lib/firebase/config";
+import { db, storage } from "@/lib/firebase/config";
 import { Group } from "@/types/group";
 import { Message, MessageList } from "@/types/message";
 import { Room } from "@/types/room";
 import { User } from "@/types/user";
 import { Button } from "@chakra-ui/react";
 import { FirebaseError } from "firebase/app";
-import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild, update, remove } from "firebase/database";
+import { getDatabase, limitToFirst, onChildAdded, onValue, query, ref,limitToLast, orderByChild, update, remove, onChildChanged } from "firebase/database";
 import { doc, getDoc, orderBy} from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import CreateIcon from '@mui/icons-material/Create';
@@ -25,6 +25,7 @@ import styled from "@emotion/styled";
 import { DisabledByDefault } from "@mui/icons-material";
 import { css } from "@emotion/react";
 import { Image } from "@/types/image";
+import { getDownloadURL, getStorage,ref as storageRef } from "firebase/storage";
 declare global {
     namespace JSX {
         interface IntrinsicElements {
@@ -71,6 +72,8 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [clickMessage,setClickMessage] = useState<Message|null>(null);
     const [editMessage,setEditMessage] = useState<string>("");
     const [images,setImages] = useState<Image[]>([]);
+    const [loadMessage,setLoadMessage] = useState(false);
+    //const [messageImages,setMessageImages] = useState<Array<>>([]);
     const MessageMainItemCSS = css`
         min-height:50px;
         max-hegith:none;
@@ -78,6 +81,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         display:flex;
         margin-top:20px;
         padding:2px;
+        position:relative;
         
     `;
     const MessageSubItemCSS = css`
@@ -85,6 +89,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         margin-left:4px;
         display:flex;
         padding:2px;
+        position:relative;
     `;
     const noClickMessageCss = css`
         &:hover {
@@ -135,7 +140,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     }
     const EditMessageButton = ({message}:{message:Message}) => {
         const EditMessageButtonCSS = styled.div`
-            position:relative;
+            position:absolute;
             right:20px;
             font-size:1px;
             display:flex;
@@ -225,6 +230,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         if(!room)return;
         const rdb = getDatabase()
         const roomMessagesRef = query(ref(rdb,`roomMessages/${params.room_id}`), limitToLast(100),orderByChild(`/sendAt`));
+        setLoadMessage(true);
         return onChildAdded(roomMessagesRef,(snapshot) => {
             const key = snapshot.key || "";
             const value = snapshot.val();
@@ -232,7 +238,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             onValue(messageRef, (snapshot) => {
                 const value = snapshot.val();
                 if(value){
-                    const message:Message = {key:key,body:value.body,sender_id:value.sender_id,room:room,type:value.type}
+                    const message:Message = {key:key,body:value.body,sender_id:value.sender_id,room:room,type:value.type,images:[]}
                     setMessages((prev) =>{
                         const findex = prev.findIndex((v) => v.key == message.key);
                         if(findex == -1){
@@ -253,9 +259,40 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                     });
                 }
             })
+            setLoadMessage(false);
         })
     },[isRoomLoad])
-    
+    useEffect(() => {
+        if(!messages)return;
+        const rdb = getDatabase()
+        
+        messages.map((message) => {
+            const messageImageRef = query(ref(rdb,`messageImages/${message.key}`),orderByChild('number'));
+            onChildAdded(messageImageRef,(snapshot) => {
+                if(!snapshot)return;
+                getDownloadURL(storageRef(storage, `messages/${snapshot.key}`))
+                .then((url) => {
+                    setMessages((prev) => {
+                        const index = prev.findIndex((v) => (v.key == message.key));
+                        //console.log(prev[0].key == message.key,index);
+                        if(index == -1)return prev;
+                        const oldMessage = prev[index];
+                        const newMessage:Message = {key:oldMessage.key,
+                                            body:oldMessage.body,
+                                            sender_id:oldMessage.sender_id,
+                                            room:oldMessage.room,
+                                            type:oldMessage.type,
+                                            images:[...oldMessage.images,url]}
+                        if(oldMessage.images.findIndex((v) => (v == url)) != -1)return prev;
+                        return [...prev.slice(0,index),newMessage,...prev.slice(index+1,prev.length)];
+                    })
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+            });
+        })
+    },[messages])
 
     useEffect(() => {
         if(!pageGroup)return;
@@ -329,7 +366,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                     <ChatBody>
                         <div id = "chat-list">
                             {
-                                
                             messages.map((message,i,lastUser) => {
                                     const sender = members.find((u) => (u.id === message.sender_id));
                                     if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id ){
@@ -338,6 +374,13 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                 <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
                                                 <div style={{flexGrow:1,padding:2,marginLeft:8,minWidth:0}}>
                                                     <p style={{fontWeight:"bold"}}>{sender?.name}</p>
+                                                    <div style={{display:"flex"}}>
+                                                        {
+                                                            message.images.map((image,j) => (
+                                                                <img key={j} src={image} alt="" style={{width:"220px",height:"220px",objectFit:"contain",margin:5}}  />
+                                                            ))
+                                                        }
+                                                    </div>
                                                     {
                                                         (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
                                                     }
@@ -358,13 +401,27 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                             <div css = {[MessageSubItemCSS,(message!==clickMessage)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectID(message.key)} onMouseLeave={() => setSelectID(null)} key = {i}>
                                                 <div style={{minWidth:"48px"}}>
                                                 </div>
-                                                <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
+                                                <div style={{flexGrow:1,minWidth:0,paddingLeft:2,marginLeft:8}}>
                                                     {
-                                                        (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                        (message.images.length > 0)&&
+                                                        <div id={`image_list${i}`} style={{maxWidth:"100%",display:"flex",overflowX:"scroll",clear:"both"}}>
+                                                            {
+                                                                message.images.map((image,j) => (
+                                                                    <div key={j} style={{minWidth:220,margin:4,float:"left",backgroundColor:"#F5F5F5"}}>
+                                                                        <img onClick={() => window.open(image)} src={image} alt="" style={{width:"200px",height:"200px",objectFit:"contain"}}  />                                                                    
+                                                                    </div>
+                                                                ))
+                                                            }
+                                                        </div>
                                                     }
-                                                    {
-                                                        (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
-                                                    }
+                                                    <div>
+                                                        {
+                                                            (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                        }
+                                                        {
+                                                            (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                        }
+                                                    </div>
                                                 </div>
                                                 {
                                                     (message.sender_id == user.id) && 

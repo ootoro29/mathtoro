@@ -38,6 +38,7 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
     const handleCreateMessage = async() => {
         if(!user)return;
         const Message = message;
+        const Images = images;
         setMessage("");
         if(isFormula){
             setFormulaMessage("");
@@ -45,21 +46,9 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
             setChatMessage("");
         }
         if(clickID === null){
-            try{
-                for(let i = 0; i < images.length; i++){
-                    const date = new Date().getTime();
-                    const name = Math.random().toString(36).slice(-8) + date;
-                    const strf = storageRef(storage,`/messages/${name}.${images[i].name.split('.').pop()}`);
-                    await uploadBytes(strf,images[i].image).then((snapshot) => {
-                        console.log(snapshot.ref);
-                    });
-                }
-                setImages([]);
-            }catch(e){
-                console.log(e);
-            }
+            setImages([]);
         }
-        if(clickID===null&&Message.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
+        if(clickID===null&&Images.length==0&&Message.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
         if(clickID!==null&&editMessage.replaceAll(" ","").replaceAll("　","").replaceAll('\n',"")==="")return;
         try{
             if(clickID === null){
@@ -72,6 +61,17 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
                     sendAt: serverTimestamp(),
                     type:(isFormula)?"formula":"chat"
                 }).then(async(message) => {
+                    for(let i = 0; i < Images.length; i++){
+                        const date = new Date().getTime();
+                        const name = Math.random().toString(36).slice(-8) + date;
+                        const strf = storageRef(storage,`/messages/${name}`);//.${Images[i].name.split('.').pop()}
+                        await uploadBytes(strf,Images[i].image).then(async(snapshot) => {
+                            const messageImage = ref(rdb,`messageImages/${message.key}/${snapshot.ref.fullPath.split('/').pop()}`);
+                            await set(messageImage,{
+                                number:i,
+                            })
+                        })
+                    }
                     const dbRoomMessagesRef = ref(rdb,`roomMessages/${room_id}/${message.key}`);
                     await set(dbRoomMessagesRef,{
                         exist: true,
