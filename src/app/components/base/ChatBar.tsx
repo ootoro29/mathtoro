@@ -8,6 +8,7 @@ import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useEffect, useRe
 import { MathfieldElement } from "mathlive";
 import { TextareaAutosize, TextField } from "@mui/material";
 import SendIcon from '@mui/icons-material/Send';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import styled from "@emotion/styled";
 import { Message } from "@/types/message";
 import { Image } from "@/types/image";
@@ -35,6 +36,7 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
     const [composing, setComposition] = useState(false);
     const [shift, setShift] = useState(false);
     const [enter, setEnter] = useState(false);
+    const inputImagesRef = useRef<HTMLInputElement>(null);
     const handleCreateMessage = async() => {
         if(!user)return;
         const Message = message;
@@ -257,8 +259,34 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
                     <SendBottonCSS>
                         <div style={{flexGrow:1}}></div>
                         <Button onClick={handleCreateMessage}>
-                            <SendIcon style={{fontSize:35,margin:2}}/>
+                            <SendIcon style={{fontSize:20,margin:2}}/>
                         </Button>
+                    </SendBottonCSS>
+                    <SendBottonCSS>
+                        <div style={{flexGrow:1}}></div>
+                        <Button onClick={() => inputImagesRef.current?.click()}>
+                            <AddPhotoAlternateIcon style={{fontSize:20,margin:2}} />
+                        </Button>
+                        <input 
+                            multiple 
+                            ref = {inputImagesRef} 
+                            type="file" 
+                            style={{display:"none"}} 
+                            onChange={(e) => {
+                                const files = e.target.files;
+                                if(!files)return;
+                                alert(files.length);
+                                if(typeof files[0] !== 'undefined') {
+                                    for(let i = 0; i < files.length; i++){
+                                        console.log(files[i].type);
+                                        if(files[i].type == "image/png" || files[i].type == "image/jpg" || files[i].type == "image/gif"){
+                                            const image = {image:files[i],URL:window.URL.createObjectURL(files[i]),name:files[i].name};
+                                            setImages((prev) => [...prev,image])
+                                        }
+                                    }
+                                } 
+                            }} 
+                        />
                     </SendBottonCSS>
                 </Box>
             </chakra.form>
