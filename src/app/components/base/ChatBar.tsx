@@ -276,11 +276,9 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
                             onChange={(e) => {
                                 const files = e.target.files;
                                 if(!files)return;
-                                alert(files[0].name);
                                 if(typeof files[0] !== 'undefined') {
                                     for(let i = 0; i < files.length; i++){
-                                        console.log(files[i].name);
-                                        if(files[i].type == "image/png" || files[i].type == "image/jpg" || files[i].type == "image/gif"){
+                                        if(files[i].type == "image/png" || files[i].type == "image/jpeg" || files[i].type == "image/gif"){
                                             const image = {image:files[i],URL:window.URL.createObjectURL(files[i]),name:files[i].name};
                                             setImages((prev) => [...prev,image])
                                         }

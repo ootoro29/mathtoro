@@ -170,7 +170,6 @@ export default function Page({params}:{params:{group_id:string}}){
                 const room:Room = {id:key,title:value.title,writer_id:value.writer_id,type:value.type,sendAt:value.sendAt}
                 setRooms((prev) => {
                     const findex = prev.findIndex((v) => v.id == room.id);
-                    console.log(prev);
                     if(findex == -1){
                         return [room,...prev];
                     }else{
