@@ -271,6 +271,7 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
                             multiple 
                             ref = {inputImagesRef} 
                             type="file" 
+                            accept="image/*"
                             style={{display:"none"}} 
                             onChange={(e) => {
                                 const files = e.target.files;
