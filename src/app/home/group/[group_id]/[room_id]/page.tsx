@@ -191,7 +191,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     useEffect(() => {
         const chatArea = document.getElementById('chat-list');
         if(!chatArea)return;
-        chatArea.addEventListener("load",() => alert('load'));
         setTimeout(scrollBottom,200);
     },[messages])
     
@@ -274,7 +273,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                 .then((url) => {
                     setMessages((prev) => {
                         const index = prev.findIndex((v) => (v.key == message.key));
-                        //console.log(prev[0].key == message.key,index);
                         if(index == -1)return prev;
                         const oldMessage = prev[index];
                         const newMessage:Message = {key:oldMessage.key,
@@ -325,7 +323,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             const files = e.dataTransfer.files;
             if(typeof files[0] !== 'undefined') {
                 for(let i = 0; i < files.length; i++){
-                    console.log(files[i].type);
                     if(files[i].type == "image/png" || files[i].type == "image/jpg" || files[i].type == "image/gif"){
                         const image = {image:files[i],URL:window.URL.createObjectURL(files[i]),name:files[i].name};
                         setImages((prev) => [...prev,image])
