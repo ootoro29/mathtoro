@@ -24,6 +24,7 @@ import Link from "next/link";
 import styled from "@emotion/styled";
 import { DisabledByDefault } from "@mui/icons-material";
 import { css } from "@emotion/react";
+import { Image } from "@/types/image";
 declare global {
     namespace JSX {
         interface IntrinsicElements {
@@ -69,6 +70,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
     const [selectID,setSelectID] = useState<string|null>(null);
     const [clickMessage,setClickMessage] = useState<Message|null>(null);
     const [editMessage,setEditMessage] = useState<string>("");
+    const [images,setImages] = useState<Image[]>([]);
     const MessageMainItemCSS = css`
         min-height:50px;
         max-hegith:none;
@@ -238,7 +240,6 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                         }else{
                             return [...prev.slice(0,findex),message,...prev.slice(findex+1,prev.length)];
                         }
-                        
                     });
                 }else{
                     setMessages((prev) =>{
@@ -268,7 +269,37 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
         })
     },[pageGroup])
 
-    
+    useEffect(() => {
+        const fileArea = document.getElementById('dragArea');
+        if(!fileArea)return;
+        fileArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileArea.classList.add('dragover');
+        });
+
+        fileArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            fileArea.classList.remove('dragover');
+        });
+        fileArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileArea.classList.remove('dragover');
+            if(!e.dataTransfer)return;
+            const files = e.dataTransfer.files;
+            if(typeof files[0] !== 'undefined') {
+                for(let i = 0; i < files.length; i++){
+                    console.log(files[i].type);
+                    if(files[i].type == "image/png" || files[i].type == "image/jpg" || files[i].type == "image/gif"){
+                        const image = {image:files[i],URL:window.URL.createObjectURL(files[i]),name:files[i].name};
+                        setImages((prev) => [...prev,image])
+                    }
+                }
+            } else {
+                
+            }
+        });
+        
+    },[document.getElementById('dragArea')])
     if(room&&pageGroup&&user){
         return(
             <>
@@ -294,59 +325,60 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
 
                     </div>
                 </GroupsHeader>
-                <ChatBody>
-                    <div id = "chat-list">
-                        {
-                            
-                           messages.map((message,i,lastUser) => {
-                                const sender = members.find((u) => (u.id === message.sender_id));
-                                if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id ){
-                                    return(
-                                        <div css = {[MessageMainItemCSS,(message!==clickMessage)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectID(message.key)} onMouseLeave={() => setSelectID(null)} key = {i}>
-                                            <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
-                                            <div style={{flexGrow:1,padding:2,marginLeft:8,minWidth:0}}>
-                                                <p style={{fontWeight:"bold"}}>{sender?.name}</p>
+                <div id="dragArea" style={{display:"flex",flexDirection:"column",flexGrow:1}}>
+                    <ChatBody>
+                        <div id = "chat-list">
+                            {
+                                
+                            messages.map((message,i,lastUser) => {
+                                    const sender = members.find((u) => (u.id === message.sender_id));
+                                    if(i == 0 || lastUser.at(i-1)?.sender_id !== message.sender_id ){
+                                        return(
+                                            <div css = {[MessageMainItemCSS,(message!==clickMessage)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectID(message.key)} onMouseLeave={() => setSelectID(null)} key = {i}>
+                                                <img src={sender?.photoURL} alt="" style={{borderRadius:"50%",width:"48px",height:"48px"}} />
+                                                <div style={{flexGrow:1,padding:2,marginLeft:8,minWidth:0}}>
+                                                    <p style={{fontWeight:"bold"}}>{sender?.name}</p>
+                                                    {
+                                                        (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                    }
+                                                    {
+                                                        
+                                                        (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                                
+                                                    }
+                                                </div>
                                                 {
-                                                    (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
-                                                }
-                                                {
-                                                    
-                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
-                                                             
-                                                }
-                                            </div>
-                                            {
-                                                (message.sender_id == user.id) &&
-                                                <EditMessageButton message={message}/>
-                                            }
-                                        </div>
-                                    )
-                                }else{
-                                    return(
-                                        <div css = {[MessageSubItemCSS,(message!==clickMessage)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectID(message.key)} onMouseLeave={() => setSelectID(null)} key = {i}>
-                                            <div style={{minWidth:"48px"}}>
-                                            </div>
-                                            <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
-                                                {
-                                                    (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
-                                                }
-                                                {
-                                                    (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                    (message.sender_id == user.id) &&
+                                                    <EditMessageButton message={message}/>
                                                 }
                                             </div>
-                                            {
-                                                (message.sender_id == user.id) && 
-                                                <EditMessageButton message={message}/>
-                                            }
-                                        </div>
-                                    )
-                                }
-                            }) 
-                        }
-                    </div>
-                </ChatBody>
-                
-                <ChatBar clickID = {(clickMessage)?clickMessage.key:null} setClickMessage={setClickMessage} editMessage = {editMessage} setEditMessage = {setEditMessage} isEditMessageType={(clickMessage)?clickMessage.type:""} room_id={params.room_id} message={message} setMessage={setMessage} />
+                                        )
+                                    }else{
+                                        return(
+                                            <div css = {[MessageSubItemCSS,(message!==clickMessage)?noClickMessageCss:clickMessageCSS]} onMouseOver={() => setSelectID(message.key)} onMouseLeave={() => setSelectID(null)} key = {i}>
+                                                <div style={{minWidth:"48px"}}>
+                                                </div>
+                                                <div style={{flexGrow:1,paddingLeft:2,marginLeft:8}}>
+                                                    {
+                                                        (message.type==="chat")&&<MessageTextItem messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                    }
+                                                    {
+                                                        (message.type==="formula")&&<MessageFormulaItem i = {i} messageBody={(message===clickMessage)?editMessage:message.body} />
+                                                    }
+                                                </div>
+                                                {
+                                                    (message.sender_id == user.id) && 
+                                                    <EditMessageButton message={message}/>
+                                                }
+                                            </div>
+                                        )
+                                    }
+                                }) 
+                            }
+                        </div>
+                    </ChatBody>
+                    <ChatBar images = {images} setImages = {setImages} clickID = {(clickMessage)?clickMessage.key:null} setClickMessage={setClickMessage} editMessage = {editMessage} setEditMessage = {setEditMessage} isEditMessageType={(clickMessage)?clickMessage.type:""} room_id={params.room_id} message={message} setMessage={setMessage} />
+                </div>
             </>
         );
     }

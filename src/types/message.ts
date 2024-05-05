@@ -1,4 +1,5 @@
 import { Room } from "./room";
+import { Image } from "./image";
 import { User } from "./user";
 
 export type Message = {
