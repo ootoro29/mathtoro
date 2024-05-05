@@ -271,11 +271,11 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
                             multiple 
                             ref = {inputImagesRef} 
                             type="file" 
+                            accept="image/*"
                             style={{display:"none"}} 
                             onChange={(e) => {
                                 const files = e.target.files;
                                 if(!files)return;
-                                alert(files.length);
                                 if(typeof files[0] !== 'undefined') {
                                     for(let i = 0; i < files.length; i++){
                                         console.log(files[i].type);
