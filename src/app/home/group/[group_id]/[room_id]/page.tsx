@@ -374,7 +374,9 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                     <div style={{display:"flex"}}>
                                                         {
                                                             message.images.map((image,j) => (
-                                                                <img key={j} src={image} alt="" style={{width:"220px",height:"220px",objectFit:"contain",margin:5}}  />
+                                                                <div key={j} style={{minWidth:220,margin:4,float:"left",backgroundColor:"#F5F5F5"}}>
+                                                                    <img onClick={() => window.open(image)} src={image} alt="" style={{width:"200px",height:"200px",objectFit:"contain"}}  />                                                                    
+                                                                </div>
                                                             ))
                                                         }
                                                     </div>

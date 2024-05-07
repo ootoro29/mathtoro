@@ -1,4 +1,5 @@
 'use client'
+/** @jsxImportSource @emotion/react */ 
 import { useAuth } from "@/context/auth";
 import 'mathlive'
 import { Box, Button, chakra, Input, Textarea } from "@chakra-ui/react";
@@ -6,9 +7,10 @@ import { getDatabase, push, ref, serverTimestamp, set, update } from "firebase/d
 import { ref as storageRef, uploadBytes } from "firebase/storage";
 import { Dispatch, FormEvent, FormEventHandler, SetStateAction, useEffect, useRef, useState } from "react";
 import { MathfieldElement } from "mathlive";
-import { TextareaAutosize, TextField } from "@mui/material";
+import { css, TextareaAutosize, TextField } from "@mui/material";
 import SendIcon from '@mui/icons-material/Send';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import styled from "@emotion/styled";
 import { Message } from "@/types/message";
 import { Image } from "@/types/image";
@@ -108,13 +110,26 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
             max-width:0px;
             height:260px;
             border-radius:5px;
+            position:relative;
         `;
         const ImageDivItemCSS = styled.div`
             background:#e5e5e5;
-            min-width:220px;
+            min-width:230px;
             max-width:0px;
             height:220px;
             border-radius:5px;
+        `;
+        const ImageDeleteButton = css`
+            position: absolute;
+            font-size:24px;
+            right:6px;
+            top:6px;
+            color:#FF0000;
+            &:hover{
+                right:0px;
+                top:0px;
+                font-size:36px;
+            }
         `;
         return(
             <Box id="scroll" onWheel={(e) => {
@@ -123,15 +138,21 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
                 if(Math.abs(e.deltaY) < Math.abs(e.deltaX))return;
                 e.preventDefault();
                 scrollElement.scrollLeft += e.deltaY;
-                
             }} style={{width:"100%",minWidth:0,display:"flex",overflowX:"scroll", maxHeight:400,msOverflowStyle:"none",scrollbarWidth:"none"}}>
-                {//
+                {
                     images.map((image,i) => (
                         <ImageListItemCSS key = {i}>
                             <ImageDivItemCSS>
                                 <img src={image.URL} alt={`Images[${i}]`} style={{width:"220px",height:"220px",objectFit:"contain"}} />
                             </ImageDivItemCSS>
                             <p style={{overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{image.name}</p>
+                            <HighlightOffIcon onClick = {
+                                (e) => {
+                                    setImages((prev) => {
+                                        return [...prev.slice(0,i),...prev.slice(i+1,prev.length)];
+                                    })
+                                }}
+                                css={ImageDeleteButton}/>
                         </ImageListItemCSS>
                     ))
                 }
