@@ -323,7 +323,7 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
             const files = e.dataTransfer.files;
             if(typeof files[0] !== 'undefined') {
                 for(let i = 0; i < files.length; i++){
-                    if(files[i].type == "image/png" || files[i].type == "image/jpg" || files[i].type == "image/gif"){
+                    if(files[i].type == "image/png" || files[i].type == "image/jpeg" || files[i].type == "image/gif"){
                         const image = {image:files[i],URL:window.URL.createObjectURL(files[i]),name:files[i].name};
                         setImages((prev) => [...prev,image])
                     }
@@ -374,7 +374,9 @@ export default function Page({params}:{params:{group_id:string,room_id:string}})
                                                     <div style={{display:"flex"}}>
                                                         {
                                                             message.images.map((image,j) => (
-                                                                <img key={j} src={image} alt="" style={{width:"220px",height:"220px",objectFit:"contain",margin:5}}  />
+                                                                <div key={j} style={{minWidth:220,margin:4,float:"left",backgroundColor:"#F5F5F5"}}>
+                                                                    <img onClick={() => window.open(image)} src={image} alt="" style={{width:"200px",height:"200px",objectFit:"contain"}}  />                                                                    
+                                                                </div>
                                                             ))
                                                         }
                                                     </div>
