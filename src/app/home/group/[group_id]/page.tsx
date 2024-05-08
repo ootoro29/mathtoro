@@ -55,9 +55,11 @@ export default function Page({params}:{params:{group_id:string}}){
     const[pageGroup,setPageGroup] = useState<Group>();
     const[members, setMembers] = useState<User[]>([]);
     const[rooms, setRooms] = useState<Room[]>([]);
+    const[filterdRooms, setFilterdRooms] = useState<Room[]>([]);
     const[roomName,setRoomName] = useState("");
     const[inviteID,setInviteID] = useState("");
     const[type,setType] = useState<RoomType>({type:"quest"});
+    const[filterSetting,setFilterSetting] = useState<Array<boolean>>([false,false,false]);
 
     const handleCreateRoom = async(e:FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -208,10 +210,16 @@ export default function Page({params}:{params:{group_id:string}}){
                         <div style={{flexGrow:1,minWidth:0, margin:3}}>
                             {   (rooms.length!=0)&&
                                 <div style={{margin:4}}>
-                                    <p>Rooms</p>
+                                    <div style={{display:"flex"}}>
+                                        <p style={{marginRight:5}}>Rooms</p>
+                                        <label>質問のみ</label>
+                                        <input type="checkbox" checked={filterSetting[0]} onClick={() => setFilterSetting((prev) => ([!prev[0],...prev.slice(1,prev.length)]))} />
+                                    </div>
                                     <div style={{display:"flex", overflowY:"scroll",flexDirection:"column",width:"100%",maxHeight:400}}>
                                         {
-                                            rooms.map((room:Room,i) => {
+                                            rooms
+                                            .filter((room) => room.type == "quest" || !filterSetting[0])
+                                            .map((room:Room,i) => {
                                                 const writer = members.find((v) => (v.id == room.writer_id));
                                                 
                                                 if(!writer)return;
