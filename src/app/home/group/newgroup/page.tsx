@@ -19,6 +19,7 @@ export default function Page(){
         try{
             const db = getDatabase(); 
             const dbRef = ref(db, 'groups')
+            /*
             await push(dbRef, {
                 name: groupName,
             }).then(async(group) => {
@@ -36,6 +37,7 @@ export default function Page(){
                 })
                 router.push(`/home/group/${group.key}`);
             })
+            */
             setGroupName('')
         }catch(e){
             console.log(e);

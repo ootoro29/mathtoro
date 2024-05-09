@@ -56,9 +56,6 @@ export const Content = ({waiting}:{waiting:boolean}) => {
                     <Text padding={2} paddingLeft={4} >
                         こんな悩みを解決することを目標に開発しています。現在、本サービスはβ版です。
                     </Text>
-                    <Text padding={2} paddingLeft={4} color={"red"} fontWeight={"bold"} >
-                        なお現在試験運用も行っていないため、この段階で書き込まれる情報は予告なく削除することがありますのでご了承ください。
-                    </Text>
                 </Box>
             </Center>
         </Box>
