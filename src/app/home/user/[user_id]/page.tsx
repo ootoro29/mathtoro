@@ -5,10 +5,11 @@ import { GroupsHeader } from "@/app/components/base/GroupsHeader";
 import { useAuth } from "@/context/auth";
 import { db } from "@/lib/firebase/config";
 import { User } from "@/types/user";
-import { Box, Button } from "@chakra-ui/react";
+import { Box, Button, Text } from "@chakra-ui/react";
 import { doc, getDoc, updateDoc, writeBatch } from "firebase/firestore";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {logout} from "@/lib/firebase/auth";
 
 export default function Page({params}:{params:{user_id:string}}){
     const user = useAuth() as User;
@@ -50,11 +51,27 @@ export default function Page({params}:{params:{user_id:string}}){
                         <img src={pageUser.photoURL} alt="" width={100} height={100} style={{borderRadius:"50%"}} />
                         {
                             (user.id === pageUser.id)?(
-                                <form onSubmit={changeUserProf}>
-                                    <input type="text" value={pageUserName} onChange={(e) => {setPageUserName(e.target.value)}} />
-                                    <Button type="submit">更新</Button>
-                                    <p>{"ユーザーID: "+pageUser.id}</p>
-                                </form>
+                                <div>
+                                    <form onSubmit={changeUserProf}>
+                                        <input type="text" value={pageUserName} onChange={(e) => {setPageUserName(e.target.value)}} />
+                                        <Button type="submit">更新</Button>
+                                        <p>{"ユーザーID: "+pageUser.id}</p>
+
+                                    </form>
+                                    <Button
+                                        onClick={() => {
+                                            logout()
+                                            router.push('/');
+                                        }}
+                                    >
+                                    <Text
+                                        fontFamily={'heading'}
+                                        fontSize={'15px'}
+                                    >
+                                            ログアウト
+                                        </Text>
+                                    </Button>
+                                </div>
                             ):(
                                 <>
                                     <p>{pageUser.name}</p>
