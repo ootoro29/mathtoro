@@ -82,6 +82,9 @@ export default function Page({params}:{params:{group_id:string,invite_id:string}
         }
     },[confirm]);
     */
+    if(!invite_user){
+        router.push(`/`);
+    }
     if(exist&&group){
         return (  
             <>

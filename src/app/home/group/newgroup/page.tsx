@@ -17,9 +17,11 @@ export default function Page(){
         if(groupName == "")return;
         if(!user)return;
         try{
+
+            /*
             const db = getDatabase(); 
             const dbRef = ref(db, 'groups')
-            /*
+            
             await push(dbRef, {
                 name: groupName,
             }).then(async(group) => {
