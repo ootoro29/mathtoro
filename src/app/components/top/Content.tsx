@@ -6,6 +6,9 @@ import Image from "next/image";
 export const Content = ({waiting}:{waiting:boolean}) => {
     const user = useAuth();
     const router = useRouter();
+    if(user){
+        router.push(`/home/`);
+    }
     return(
         <Box m={3}>
             {
