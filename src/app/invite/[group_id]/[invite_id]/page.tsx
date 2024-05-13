@@ -82,7 +82,7 @@ export default function Page({params}:{params:{group_id:string,invite_id:string}
         }
     },[confirm]);
     */
-    if(!invite_user){
+    if(invite_user === null){
         router.push(`/`);
     }
     if(exist&&group){
