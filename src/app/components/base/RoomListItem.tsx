@@ -52,6 +52,21 @@ export const RoomListItem = ({writer,group_id,room}:{writer:User,group_id:string
                 </div>
             </div>
         );
+    }else if(room.type=== "point"){    
+        return(
+            <div style={{border:"rgba(0,0,200) solid 2.5px",maxWidth:"100%",height:"60px",margin:4,display:"flex"}}  >
+                <div style={{flexGrow:1,minWidth:0}} >
+                    <p style={{fontSize:24,maxWidth:"100%",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{room.title}</p>
+                    <p style={{fontSize:10,maxWidth:"100%",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>writer: {writer.name} type: {roomTypeToString(room.type)}</p>
+                </div>
+                <div style={{margin:4,marginTop:8}}>
+                    <Link href={`/home/group/${group_id}/${room.id}`}>
+                        <Button background={"blue.200"} _hover={{background:"blue.100"}}>入場</Button>
+                        
+                    </Link>
+                </div>
+            </div>
+        );
     }
     return(
         <div style={{border:"gray solid 2.5px",maxWidth:"100%",height:"60px",margin:4,display:"flex"}}  >
