@@ -212,13 +212,17 @@ export default function Page({params}:{params:{group_id:string}}){
                                 <div style={{margin:4}}>
                                     <div style={{display:"flex"}}>
                                         <p style={{marginRight:5}}>Rooms</p>
-                                        <label>質問のみ</label>
+                                        <label style={{marginLeft:6}}>質問</label>
                                         <input type="checkbox" checked={filterSetting[0]} onClick={() => setFilterSetting((prev) => ([!prev[0],...prev.slice(1,prev.length)]))} />
+                                        <label style={{marginLeft:6}}>解説</label>
+                                        <input type="checkbox" checked={filterSetting[1]} onClick={() => setFilterSetting((prev) => ([...prev.slice(0,1),!prev[1],...prev.slice(2,prev.length)]))} />
+                                        <label style={{marginLeft:6}}>完了</label>
+                                        <input type="checkbox" checked={filterSetting[2]} onClick={() => setFilterSetting((prev) => ([...prev.slice(0,2),!prev[2]]))} />
                                     </div>
                                     <div style={{display:"flex", overflowY:"scroll",flexDirection:"column",width:"100%",maxHeight:400}}>
                                         {
                                             rooms
-                                            .filter((room) => room.type == "quest" || !filterSetting[0])
+                                            .filter((room) => (room.type == "quest" && filterSetting[0]) || (room.type == "point" && filterSetting[1]) || (room.type == "done" && filterSetting[2] || (!filterSetting[0] && !filterSetting[1] && !filterSetting[2])))
                                             .map((room:Room,i) => {
                                                 const writer = members.find((v) => (v.id == room.writer_id));
                                                 
