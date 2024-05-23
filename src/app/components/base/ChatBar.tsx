@@ -265,6 +265,7 @@ export const ChatBar = ({images,setImages,clickID,setClickMessage,editMessage,se
                                     }
                                 }
                             }
+                            aria-multiline = {true}
                             id = {"math-field"}
                             style={{width:100+"%",minHeight:45+"px"}}
                             math-mode-space = {"\\:"}

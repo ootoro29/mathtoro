@@ -35,7 +35,7 @@ declare global {
 }
 const MessageTextItem = ({messageBody}:{messageBody:string}) =>{
     const MessageTextItemCSS = styled.p`
-        work-break:break-all;
+        word-break:break-all;
         width: 90%;
         white-space: pre-line;
     `;
@@ -53,7 +53,7 @@ const MessageFormulaItem = ({i,messageBody}:{i:number,messageBody:string}) =>{
         mf.current.value = messageBody;
     },[messageBody])
     return(
-        <math-field ref = {mf} id={`math-read${i}`} read-only>
+        <math-field ref = {mf} id={`math-read${i}`} style={{wordBreak:"break-all",whiteSpace:"break-spaces"}} read-only>
             {messageBody}
         </math-field>
     );
