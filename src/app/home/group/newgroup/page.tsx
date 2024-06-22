@@ -18,7 +18,7 @@ export default function Page(){
         if(!user)return;
         try{
 
-            /*
+            
             const db = getDatabase(); 
             const dbRef = ref(db, 'groups')
             
@@ -39,7 +39,7 @@ export default function Page(){
                 })
                 router.push(`/home/group/${group.key}`);
             })
-            */
+            
             setGroupName('')
         }catch(e){
             console.log(e);
